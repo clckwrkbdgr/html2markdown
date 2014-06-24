@@ -30,7 +30,7 @@ tmp/%.o: %.cpp
 .PHONY: clean Makefile check test
 
 clean:
-	$(RM) -rf tmp/* $(TEST_BIN) $(BIN)*
+	$(RM) -rf tmp/* $(TEST_BIN) $(BIN)
 
 $(shell mkdir -p tmp)
 $(shell mkdir -p tmp/src)
