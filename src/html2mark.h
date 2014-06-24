@@ -3,6 +3,9 @@
 
 namespace Html2Mark {
 
+std::string collapse(const std::string & data,
+		bool remove_heading = false, bool remove_trailing = false);
+
 enum {
 	DEFAULT_OPTIONS = 0x00,
 	UNDERSCORED_HEADINGS = 0x01,
