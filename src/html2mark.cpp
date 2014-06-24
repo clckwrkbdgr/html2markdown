@@ -40,13 +40,20 @@ struct Html2MarkProcessor {
 	const std::string & get_result() const;
 private:
 	typedef std::pair<std::string, std::string> ContentTag;
+	enum { NONE, P, EM, I };
+
 	const std::string & html;
 	std::string result;
 	std::vector<ContentTag> parts;
+	int mode;
+	bool was_paragraph;
+	std::string prepared_content;
+
+	void process_tag(const std::string & tag, bool content_is_empty = false);
 };
 
 Html2MarkProcessor::Html2MarkProcessor(const std::string & in_html)
-	: html(in_html)
+	: html(in_html), mode(NONE), was_paragraph(false)
 {
 }
 
@@ -72,30 +79,81 @@ void Html2MarkProcessor::process_html()
 	}
 }
 
+struct Token {
+	enum { UNKNOWN, TRUE, FALSE };
+
+	std::string appendix;
+	int new_mode;
+	std::string appendix_to_remove;
+	int was_paragraph;
+	Token(const std::string & token_appendix, int token_new_mode,
+			const std::string & token_appendix_to_remove = std::string(),
+			int token_was_paragraph = UNKNOWN)
+		: appendix(token_appendix), new_mode(token_new_mode),
+		appendix_to_remove(token_appendix_to_remove),
+		was_paragraph(token_was_paragraph)
+	{}
+};
+
+void Html2MarkProcessor::process_tag(const std::string & tag, bool content_is_empty)
+{
+	std::map<int, std::map<std::string, Token>> tokens;
+	tokens[NONE] = {
+		{"em", Token("_", EM)},
+		{"i",  Token("_", I)},
+		{"p",  Token("\n", P, "", Token::TRUE)},
+	};
+	tokens[P] = {
+		{"em", Token("_", EM)},
+		{"i",  Token("_", I)},
+		{"p",  Token("\n\n", P)},
+		{"/p", Token("\n", NONE, "", Token::FALSE)},
+	};
+	tokens[EM] =  {
+		{"/em", Token("", NONE, "_")},
+		{"i",  Token("", I)},
+		{"p",  Token("\n\n", P, "_", Token::TRUE)},
+		{"/p", Token("\n", NONE, "", Token::FALSE)},
+	};
+	tokens[I] = {
+		{"/i", Token("", NONE, "_")},
+		{"em", Token("", EM)},
+		{"p",  Token("\n\n", P, "_", Token::TRUE)},
+		{"/p", Token("\n", NONE, "", Token::FALSE)},
+	};
+	if(tokens[mode].count(tag)) {
+		const Token & token = tokens[mode].at(tag);
+		if(!token.appendix_to_remove.empty()) {
+			if(content_is_empty) {
+				size_t length = token.appendix_to_remove.size();
+				result.erase(result.size() - length, length);
+			} else {
+				result += token.appendix_to_remove;
+			}
+		}
+		result += token.appendix;
+		if(token.was_paragraph != Token::UNKNOWN) {
+			was_paragraph = token.was_paragraph == Token::TRUE;
+		}
+		if(token.new_mode == NONE) {
+			mode = was_paragraph ? P : NONE;
+		} else {
+			mode = token.new_mode;
+		}
+		return;
+	}
+}
+
 void Html2MarkProcessor::process_parts()
 {
-	//TRACE("----");
-	bool in_paragraph = false;
 	for(const ContentTag & content_tag : parts) {
 		const std::string & content = content_tag.first;
 		const std::string & tag = content_tag.second;
-		//TRACE(content_tag.first);
-		//TRACE(content_tag.second);
 
 		result += content;
-		if(tag == "p") {
-			if(in_paragraph) {
-				result += '\n';
-			}
-			in_paragraph = true;
-			result += '\n';
-		}
-		if(tag == "/p") {
-			in_paragraph = false;
-			result += '\n';
-		}
+		process_tag(tag, content.empty());
 	}
-	if(in_paragraph) {
+	if(was_paragraph) {
 		result += '\n';
 	}
 }
