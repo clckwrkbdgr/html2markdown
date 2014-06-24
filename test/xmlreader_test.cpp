@@ -12,6 +12,26 @@ TEST(should_find_first_tag)
 	EQUAL(first_tag, "world");
 }
 
+TEST(should_have_content_before_the_first_tag)
+{
+	std::istringstream stream("Hello<world>");
+	XMLReader reader(stream);
+	reader.to_next_tag();
+	EQUAL(reader.get_current_content(), "Hello");
+}
+
+TEST(should_have_content_after_the_last_tag)
+{
+	std::istringstream stream("<world>Hello");
+	XMLReader reader(stream);
+	std::string first_tag = reader.to_next_tag();
+	EQUAL(first_tag, "world");
+	EQUAL(reader.get_current_content(), "");
+	std::string last_tag = reader.to_next_tag();
+	EQUAL(last_tag, "");
+	EQUAL(reader.get_current_content(), "Hello");
+}
+
 TEST(should_find_next_tag)
 {
 	std::istringstream stream("<Hello><world>");
