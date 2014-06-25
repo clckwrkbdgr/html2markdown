@@ -95,9 +95,28 @@ TEST(should_skip_empty_strong_tag)
 	EQUAL(html2mark("<strong></strong>"), "");
 }
 
+TEST(should_process_inline_tags_for_text_formatting)
+{
+	EQUAL(html2mark("Hello, <b><i>world</i></b>"), "Hello, **_world_**");
+	EQUAL(html2mark("Hello, <b><i></i></b>world"), "Hello, world");
+	EQUAL(html2mark("Hello, <i><b>world</b></i>"), "Hello, _**world**_");
+	EQUAL(html2mark("Hello, <i><b>world</i>"), "Hello, _**world**_");
+	EQUAL(html2mark("Hello, <i>world</b></i>"), "Hello, _world_");
+}
+
 TEST(should_wrap_code_tag_with_backticks)
 {
 	EQUAL(html2mark("<code>Text</code>"), "`Text`");
+}
+
+TEST(should_store_spaces_inside_code_tag_as_they_are)
+{
+	EQUAL(html2mark("<code>    Some\ttext </code>"), "`    Some\ttext `");
+}
+
+TEST(should_not_process_any_tags_inside_code_tag)
+{
+	EQUAL(html2mark("<code><p><b>Hello</b><i>world</i></p></code>"), "`<p><b>Hello</b><i>world</i></p>`");
 }
 
 TEST(should_skip_empty_code_tag)
