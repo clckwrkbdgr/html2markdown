@@ -40,7 +40,7 @@ struct Html2MarkProcessor {
 	const std::string & get_result() const;
 private:
 	typedef std::pair<std::string, std::string> ContentTag;
-	enum { NONE, P, EM, I };
+	enum { NONE, P, EM, I, STRONG, B, CODE };
 
 	const std::string & html;
 	std::string result;
@@ -101,25 +101,58 @@ void Html2MarkProcessor::process_tag(const std::string & tag, bool content_is_em
 	tokens[NONE] = {
 		{"em", Token("_", EM)},
 		{"i",  Token("_", I)},
+		{"strong", Token("**", STRONG)},
+		{"b",  Token("**", B)},
+		{"code", Token("`", CODE)},
 		{"p",  Token("\n", P, "", Token::TRUE)},
 	};
 	tokens[P] = {
 		{"em", Token("_", EM)},
 		{"i",  Token("_", I)},
+		{"strong", Token("**", STRONG)},
+		{"b",  Token("**", B)},
+		{"code", Token("`", CODE)},
 		{"p",  Token("\n\n", P)},
 		{"/p", Token("\n", NONE, "", Token::FALSE)},
 	};
 	tokens[EM] =  {
 		{"/em", Token("", NONE, "_")},
 		{"i",  Token("", I)},
+		{"strong", Token("**", STRONG)},
+		{"b",  Token("**", B)},
+		{"code", Token("`", CODE)},
 		{"p",  Token("\n\n", P, "_", Token::TRUE)},
 		{"/p", Token("\n", NONE, "", Token::FALSE)},
 	};
 	tokens[I] = {
 		{"/i", Token("", NONE, "_")},
 		{"em", Token("", EM)},
+		{"strong", Token("**", STRONG)},
+		{"b",  Token("**", B)},
+		{"code", Token("`", CODE)},
 		{"p",  Token("\n\n", P, "_", Token::TRUE)},
 		{"/p", Token("\n", NONE, "", Token::FALSE)},
+	};
+	tokens[STRONG] =  {
+		{"/strong", Token("", NONE, "**")},
+		{"b",  Token("", B)},
+		{"em", Token("_", EM)},
+		{"i",  Token("_", I)},
+		{"code", Token("`", CODE)},
+		{"p",  Token("\n\n", P, "**", Token::TRUE)},
+		{"/p", Token("\n", NONE, "", Token::FALSE)},
+	};
+	tokens[B] =  {
+		{"/b", Token("", NONE, "**")},
+		{"strong",  Token("", STRONG)},
+		{"em", Token("_", EM)},
+		{"i",  Token("_", I)},
+		{"code", Token("`", CODE)},
+		{"p",  Token("\n\n", P, "**", Token::TRUE)},
+		{"/p", Token("\n", NONE, "", Token::FALSE)},
+	};
+	tokens[CODE] =  {
+		{"/code", Token("", NONE, "`")},
 	};
 	if(tokens[mode].count(tag)) {
 		const Token & token = tokens[mode].at(tag);
