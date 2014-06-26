@@ -53,7 +53,29 @@ std::string TaggedContent::process_tag() const
 	return Chthon::format("<{0}>{1}</{0}>", tag, content);
 }
 
-static std::string process_tag(const TaggedContent & value)
+struct Html2MarkProcessor {
+	Html2MarkProcessor(const std::string & html, int html_options,
+			int html_min_reference_links_length);
+	void process();
+	const std::string & get_result() const { return result; }
+private:
+	std::istringstream stream;
+	int options;
+	int min_reference_links_length;
+	std::string result;
+	std::vector<TaggedContent> parts;
+
+	std::string process_tag(const TaggedContent & value);
+	void collapse_tag(const std::string & tag = std::string());
+};
+
+Html2MarkProcessor::Html2MarkProcessor(const std::string & html, int html_options,
+		int html_min_reference_links_length)
+	: stream(html), options(html_options),
+	min_reference_links_length(html_min_reference_links_length)
+{}
+
+std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 {
 	if(value.tag.empty()) {
 		return value.content;
@@ -69,13 +91,27 @@ static std::string process_tag(const TaggedContent & value)
 		return value.content.empty() ? "" : "**" + value.content + "**";
 	} else if(value.tag == "code") {
 		return value.content.empty() ? "" : "`" + value.content + "`";
+	} else if(Chthon::starts_with(value.tag, "h")) {
+		if(value.content.empty()) {
+			return "";
+		}
+		size_t level = strtoul(value.tag.substr(1).c_str(), nullptr, 10);
+		if(level < 1 || 6 < level) {
+			return Chthon::format("<{0}>{1}</{0}>", value.tag, value.content);
+		}
+		std::string content = collapse(value.content, true, true);
+		if(level <= 2 && options & UNDERSCORED_HEADINGS) {
+			char underscore = level == 1 ? '=' : '-';
+			return "\n" + content + "\n" +
+				std::string(content.size(), underscore) + "\n";
+		}
+		return "\n" + std::string(level, '#') +  " " + content + "\n";
 	}
 	return Chthon::format("<{0}>{1}</{0}>", value.tag, value.content);
 }
 
-static std::string collapse_tag(std::vector<TaggedContent> & parts, const std::string & tag = std::string())
+void Html2MarkProcessor::collapse_tag(const std::string & tag)
 {
-	std::string result;
 	while(!parts.empty()) {
 		TaggedContent value = parts.back();
 		parts.pop_back();
@@ -88,19 +124,14 @@ static std::string collapse_tag(std::vector<TaggedContent> & parts, const std::s
 			break;
 		}
 	}
-	return result;
 }
 
-std::string html2mark(const std::string & html, int /*options*/,
-		int /*min_reference_links_length*/)
+void Html2MarkProcessor::process()
 {
-	std::istringstream stream(html);
 	XMLReader reader(stream);
 
-	std::string result;
-	std::vector<TaggedContent> parts;
 	std::string tag = reader.to_next_tag();
-	std::string content = collapse(reader.get_current_content(), true, true);
+	std::string content = collapse(reader.get_current_content());
 	result += content;
 	while(!tag.empty()) {
 		reader.to_next_tag();
@@ -115,19 +146,31 @@ std::string html2mark(const std::string & html, int /*options*/,
 					}
 					);
 			if(found) {
-				result += collapse_tag(parts, open_tag);
+				collapse_tag(open_tag);
+			}
+			if(parts.empty()) {
+				result += content;
+			} else {
+				parts.back().content += content;
 			}
 		} else {
 			if(tag == "p") {
-				result += collapse_tag(parts);
+				collapse_tag();
 			}
 			parts.emplace_back(tag, content);
 		}
 
 		tag = reader.get_current_tag();
 	}
-	result += collapse_tag(parts);
-	return result;
+	collapse_tag();
+}
+
+std::string html2mark(const std::string & html, int options,
+		int min_reference_links_length)
+{
+	Html2MarkProcessor processor(html, options, min_reference_links_length);
+	processor.process();
+	return processor.get_result();
 }
 
 }

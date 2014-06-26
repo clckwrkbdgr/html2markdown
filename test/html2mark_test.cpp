@@ -38,7 +38,7 @@ TEST(should_pass_text_between_tags)
 
 TEST(should_remove_extra_whitespaces_in_text_between_tags)
 {
-	EQUAL(html2mark("Text\nwith    whitespaces\t"), "Text with whitespaces");
+	EQUAL(html2mark("Text\nwith    whitespaces\t"), "Text with whitespaces ");
 }
 
 TEST(should_wrap_p_tag_with_line_breaks)
@@ -114,11 +114,6 @@ TEST(should_store_spaces_inside_code_tag_as_they_are)
 	EQUAL(html2mark("<code>    Some\ttext </code>"), "`    Some\ttext `");
 }
 
-TEST(should_not_process_any_tags_inside_code_tag)
-{
-	EQUAL(html2mark("<code><p><b>Hello</b><i>world</i></p></code>"), "`<p><b>Hello</b><i>world</i></p>`");
-}
-
 TEST(should_skip_empty_code_tag)
 {
 	EQUAL(html2mark("<code></code>"), "");
@@ -127,41 +122,37 @@ TEST(should_skip_empty_code_tag)
 TEST(should_convert_heading_1_to_underscored)
 {
 	EQUAL(html2mark("<h1>Text</h1>", Html2Mark::UNDERSCORED_HEADINGS),
-			"Text\n====");
+			"\nText\n====\n");
 }
 
 TEST(should_convert_heading_1_to_hashed)
 {
-	EQUAL(html2mark("<h1>Text</h1>"), "# Text");
+	EQUAL(html2mark("<h1>Text</h1>"), "\n# Text\n");
 }
 
 TEST(should_convert_heading_2_to_underscored)
 {
 	EQUAL(html2mark("<h2>Text</h2>", Html2Mark::UNDERSCORED_HEADINGS),
-			"Text\n----");
+			"\nText\n----\n");
 }
 
 TEST(should_convert_heading_2_to_hashed)
 {
-	EQUAL(html2mark("<h2>Text</h2>"), "## Text");
+	EQUAL(html2mark("<h2>Text</h2>"), "\n## Text\n");
 }
 
 TEST(should_convert_heading_greater_than_2_up_to_10_to_hashed)
 {
-	EQUAL(html2mark("<h3>Text</h3>"),   "### Text");
-	EQUAL(html2mark("<h4>Text</h4>"),   "#### Text");
-	EQUAL(html2mark("<h5>Text</h5>"),   "##### Text");
-	EQUAL(html2mark("<h6>Text</h6>"),   "###### Text");
-	EQUAL(html2mark("<h7>Text</h7>"),   "####### Text");
-	EQUAL(html2mark("<h8>Text</h8>"),   "######## Text");
-	EQUAL(html2mark("<h9>Text</h9>"),   "######### Text");
-	EQUAL(html2mark("<h10>Text</h10>"), "########## Text");
+	EQUAL(html2mark("<h3>Text</h3>"),   "\n### Text\n");
+	EQUAL(html2mark("<h4>Text</h4>"),   "\n#### Text\n");
+	EQUAL(html2mark("<h5>Text</h5>"),   "\n##### Text\n");
+	EQUAL(html2mark("<h6>Text</h6>"),   "\n###### Text\n");
 }
 
 TEST(should_remove_extra_whitespaces_in_heading_tag)
 {
 	EQUAL(html2mark("<h1>Text\nwith    whitespaces\t</h1>"),
-			"# Text with whitespaces");
+			"\n# Text with whitespaces\n");
 }
 
 TEST(should_convert_hr_tag_to_paragraph_breaker)
