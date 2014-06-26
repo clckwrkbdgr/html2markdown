@@ -227,13 +227,13 @@ TEST(should_remove_extra_whitespaces_in_a_tag)
 
 TEST(should_take_pre_tag_content_as_it_is_with_tab_indenting)
 {
-	EQUAL(html2mark("<pre>some\n\ttext</pre>"), "\n\tsome\t\ttext\n");
+	EQUAL(html2mark("<pre>some\n\ttext</pre>"), "\n\tsome\n\t\ttext\n");
 }
 
 TEST(should_take_pre_code_tags_content_as_it_is_with_tab_indenting)
 {
 	EQUAL(html2mark("<pre><code>some\n\ttext</code></pre>"),
-			"\n\tsome\t\ttext\n");
+			"\n\tsome\n\t\ttext\n");
 }
 
 TEST(should_convert_ol_tag_to_numbered_list)

@@ -130,6 +130,14 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		} else {
 			return Chthon::format("[{0}]({1})", content, src);
 		}
+	} else if(value.tag == "pre") {
+		std::vector<std::string> lines;
+		Chthon::split(value.content, lines);
+		std::string content;
+		for(const std::string & line : lines) {
+			content += "\n\t" + line;
+		}
+		return content + "\n";
 	}
 	return Chthon::format("<{0}>{1}</{0}>", value.tag, value.content);
 }
@@ -179,9 +187,15 @@ void Html2MarkProcessor::process()
 				collapse_tag(open_tag);
 			}
 			add_content(content);
+		} else if(tag == "code") {
+			if(!parts.empty() && parts.back().tag == "pre" && parts.back().content.empty()) {
+				parts.back().content = content;
+			} else {
+				parts.emplace_back(tag, content, attrs);
+			}
 		} else if(tag == "p") {
 			collapse_tag();
-			parts.emplace_back(tag, content);
+			parts.emplace_back(tag, content, attrs);
 		} else if(Chthon::starts_with(tag, "hr")) {
 			add_content("\n* * *\n");
 			add_content(content);
