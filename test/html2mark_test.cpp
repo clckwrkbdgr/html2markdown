@@ -279,7 +279,7 @@ TEST(should_recognize_nested_list)
 TEST(should_prepend_blockquote_content_with_quote_character)
 {
 	EQUAL(html2mark("<blockquote><h1>some</h1><p>text</p></blockquote>"),
-				"\n> # some\n> text\n");
+				"\n> \n> # some\n> \n> text\n");
 }
 
 }

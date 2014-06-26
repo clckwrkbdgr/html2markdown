@@ -183,6 +183,14 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 			content += "\n\t" + line;
 		}
 		return content + "\n";
+	} else if(value.tag == "blockquote") {
+		std::vector<std::string> lines;
+		Chthon::split(value.content, lines);
+		std::string content;
+		for(const std::string & line : lines) {
+			content += "\n> " + line;
+		}
+		return content + "\n";
 	}
 	return Chthon::format("<{0}>{1}</{0}>", value.tag, value.content);
 }
