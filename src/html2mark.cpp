@@ -58,6 +58,12 @@ std::string TaggedContent::process_tag() const
 	return Chthon::format("<{0}>{1}</{0}>", tag, content);
 }
 
+struct List {
+	bool numbered;
+	std::vector<std::string> items;
+	List(bool numbered_list) : numbered(numbered_list) {}
+};
+
 struct Html2MarkProcessor {
 	Html2MarkProcessor(const std::string & html, int html_options,
 			int html_min_reference_links_length);
@@ -70,6 +76,7 @@ private:
 	std::string result;
 	std::vector<TaggedContent> parts;
 	std::vector<std::pair<unsigned, std::string>> references;
+	std::vector<List> lists;
 
 	std::string process_tag(const TaggedContent & value);
 	void collapse_tag(const std::string & tag = std::string());
@@ -98,6 +105,39 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		return value.content.empty() ? "" : "**" + value.content + "**";
 	} else if(value.tag == "code") {
 		return value.content.empty() ? "" : "`" + value.content + "`";
+	} else if(value.tag == "ol") {
+		if(lists.empty()) {
+			return "\n" + collapse(value.content, true, true) + "\n";
+		}
+		std::string content;
+		if(!value.content.empty()) {
+			content = "\n" + collapse(value.content, true, true) + "\n";
+		}
+		content += '\n';
+		int index = 1;
+		for(const std::string & item : lists.back().items) {
+			std::vector<std::string> lines;
+			Chthon::split(item, lines);
+			bool is_first_line = true;
+			for(const std::string & line : lines) {
+				if(is_first_line) {
+					std::string number = std::to_string(index) + ". ";
+					content += number + line + "\n";
+					is_first_line = false;
+				} else {
+					content += "    " + line + "\n";
+				}
+			}
+			++index;
+		}
+		lists.pop_back();
+		return content;
+	} else if(value.tag == "li") {
+		if(lists.empty()) {
+			return "\n" + collapse(value.content, true, true) + "\n";
+		}
+		lists.back().items.push_back(value.content);
+		return "";
 	} else if(Chthon::starts_with(value.tag, "h")) {
 		if(value.content.empty()) {
 			return "";
@@ -193,6 +233,26 @@ void Html2MarkProcessor::process()
 			} else {
 				parts.emplace_back(tag, content, attrs);
 			}
+		} else if(tag == "ol") {
+			lists.push_back(List(true));
+			parts.emplace_back(tag, content, attrs);
+		} else if(tag == "li") {
+			bool list_found = false, li_found = false;
+			for(const TaggedContent & part : parts) {
+				if(part.tag == "ol") {
+					list_found = true;
+					li_found = false;
+				} else if(part.tag == "li") {
+					if(list_found) {
+						li_found = true;
+						break;
+					}
+				}
+			}
+			if(li_found) {
+				collapse_tag("li");
+			}
+			parts.emplace_back(tag, content, attrs);
 		} else if(tag == "p") {
 			collapse_tag();
 			parts.emplace_back(tag, content, attrs);
