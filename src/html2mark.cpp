@@ -35,9 +35,14 @@ std::string collapse(const std::string & data,
 
 struct TaggedContent {
 	std::string tag, content;
+	typedef std::map<std::string, std::string> Attrs;
+	Attrs attrs;
+
 	TaggedContent(const std::string & given_tag = std::string(),
-			const std::string & given_content = std::string())
-		: tag(given_tag), content(given_content)
+			const std::string & given_content = std::string(),
+			const Attrs & given_attrs = Attrs()
+			)
+		: tag(given_tag), content(given_content), attrs(given_attrs)
 	{}
 	std::string process_tag() const;
 };
@@ -64,6 +69,7 @@ private:
 	int min_reference_links_length;
 	std::string result;
 	std::vector<TaggedContent> parts;
+	std::vector<std::pair<unsigned, std::string>> references;
 
 	std::string process_tag(const TaggedContent & value);
 	void collapse_tag(const std::string & tag = std::string());
@@ -107,6 +113,23 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 				std::string(content.size(), underscore) + "\n";
 		}
 		return "\n" + std::string(level, '#') +  " " + content + "\n";
+	} else if(value.tag == "a") {
+		if(value.attrs.count("href") == 0) {
+			return value.content;
+		}
+		std::string src = value.attrs.at("href");
+		if(value.attrs.count("title")) {
+			src += " \"" + value.attrs.at("title") + '"';
+		}
+		bool is_too_long = value.attrs.at("href").size() > min_reference_links_length;
+		std::string content = collapse(value.content);
+		if(options & MAKE_REFERENCE_LINKS && is_too_long) {
+			unsigned ref_number = references.size() + 1;
+			references.emplace_back(ref_number, src);
+			return Chthon::format("[{0}][{1}]", content, ref_number);
+		} else {
+			return Chthon::format("[{0}]({1})", content, src);
+		}
 	}
 	return Chthon::format("<{0}>{1}</{0}>", value.tag, value.content);
 }
@@ -135,8 +158,6 @@ void Html2MarkProcessor::collapse_tag(const std::string & tag)
 void Html2MarkProcessor::process()
 {
 	XMLReader reader(stream);
-
-	std::vector<std::pair<unsigned, std::string>> references;
 
 	std::string tag = reader.to_next_tag();
 	std::string content = collapse(reader.get_current_content());
@@ -182,7 +203,7 @@ void Html2MarkProcessor::process()
 			}
 			add_content(content);
 		} else {
-			parts.emplace_back(tag, content);
+			parts.emplace_back(tag, content, attrs);
 		}
 
 		tag = reader.get_current_tag();

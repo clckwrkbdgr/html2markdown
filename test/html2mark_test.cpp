@@ -200,13 +200,13 @@ TEST(should_make_reference_style_link_for_long_img_links)
 TEST(should_convert_a_tag_to_markdown_link_element)
 {
 	EQUAL(html2mark("<a href=\"http://example.com/\">Text</a>"),
-			"![Text](http://example.com/)");
+			"[Text](http://example.com/)");
 }
 
 TEST(should_take_title_text_from_a_tag)
 {
 	EQUAL(html2mark("<a href=\"http://example.com/\" title=\"Title\">Text</a>"),
-			"![Text](http://example.com/ \"Title\")");
+			"[Text](http://example.com/ \"Title\")");
 }
 
 TEST(should_make_reference_style_link_for_long_a_links)
@@ -215,14 +215,14 @@ TEST(should_make_reference_style_link_for_long_a_links)
 			html2mark(
 				"<a href=\"http://example.com\" title=\"Title\">Text</a>",
 				Html2Mark::MAKE_REFERENCE_LINKS, 15),
-			"![Text][1]\n\n[1]: http://example.com \"Title\"\n"
+			"[Text][1]\n\n[1]: http://example.com \"Title\"\n"
 		 );
 }
 
 TEST(should_remove_extra_whitespaces_in_a_tag)
 {
 	EQUAL(html2mark("<a href=\"http://example.com/\">   \nSome\n\ttext</a>"),
-			"![Some text](http://example.com/)");
+			"[ Some text](http://example.com/)");
 }
 
 TEST(should_take_pre_tag_content_as_it_is_with_tab_indenting)
