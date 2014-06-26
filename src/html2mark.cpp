@@ -67,6 +67,7 @@ private:
 
 	std::string process_tag(const TaggedContent & value);
 	void collapse_tag(const std::string & tag = std::string());
+	void add_content(const std::string & content);
 };
 
 Html2MarkProcessor::Html2MarkProcessor(const std::string & html, int html_options,
@@ -110,16 +111,21 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 	return Chthon::format("<{0}>{1}</{0}>", value.tag, value.content);
 }
 
+void Html2MarkProcessor::add_content(const std::string & content)
+{
+	if(parts.empty()) {
+		result += content;
+	} else {
+		parts.back().content += content;
+	}
+}
+
 void Html2MarkProcessor::collapse_tag(const std::string & tag)
 {
 	while(!parts.empty()) {
 		TaggedContent value = parts.back();
 		parts.pop_back();
-		if(parts.empty()) {
-			result += process_tag(value);
-		} else {
-			parts.back().content += process_tag(value);
-		}
+		add_content(process_tag(value));
 		if(value.tag == tag) {
 			break;
 		}
@@ -130,8 +136,11 @@ void Html2MarkProcessor::process()
 {
 	XMLReader reader(stream);
 
+	std::vector<std::pair<unsigned, std::string>> references;
+
 	std::string tag = reader.to_next_tag();
 	std::string content = collapse(reader.get_current_content());
+	std::map<std::string, std::string> attrs = reader.get_attributes();
 	result += content;
 	while(!tag.empty()) {
 		reader.to_next_tag();
@@ -148,37 +157,44 @@ void Html2MarkProcessor::process()
 			if(found) {
 				collapse_tag(open_tag);
 			}
-			if(parts.empty()) {
-				result += content;
-			} else {
-				parts.back().content += content;
+			add_content(content);
+		} else if(tag == "p") {
+			collapse_tag();
+			parts.emplace_back(tag, content);
+		} else if(Chthon::starts_with(tag, "hr")) {
+			add_content("\n* * *\n");
+			add_content(content);
+		} else if(Chthon::starts_with(tag, "br")) {
+			add_content("\n");
+			add_content(content);
+		} else if(tag == "img") {
+			std::string src = attrs["src"];
+			if(attrs.count("title")) {
+				src += " \"" + attrs["title"] + '"';
 			}
+			bool is_too_long = attrs["src"].size() > min_reference_links_length;
+			if(options & MAKE_REFERENCE_LINKS && is_too_long) {
+				unsigned ref_number = references.size() + 1;
+				references.emplace_back(ref_number, src);
+				add_content(Chthon::format("![{0}][{1}]", attrs["alt"], ref_number));
+			} else {
+				add_content(Chthon::format("![{0}]({1})", attrs["alt"], src));
+			}
+			add_content(content);
 		} else {
-			if(tag == "p") {
-				collapse_tag();
-				parts.emplace_back(tag, content);
-			} else if(Chthon::starts_with(tag, "hr")) {
-				result += "\n* * *\n";
-				if(parts.empty()) {
-					result += content;
-				} else {
-					parts.back().content += content;
-				}
-			} else if(Chthon::starts_with(tag, "br")) {
-				result += "\n";
-				if(parts.empty()) {
-					result += content;
-				} else {
-					parts.back().content += content;
-				}
-			} else {
-				parts.emplace_back(tag, content);
-			}
+			parts.emplace_back(tag, content);
 		}
 
 		tag = reader.get_current_tag();
+		attrs = reader.get_attributes();
 	}
 	collapse_tag();
+	if(!references.empty()) {
+		result += "\n\n";
+		for(auto ref : references) {
+			result += Chthon::format("[{0}]: {1}\n", ref.first, ref.second);
+		}
+	}
 }
 
 std::string html2mark(const std::string & html, int options,

@@ -133,6 +133,14 @@ TEST(should_skip_whitespace_after_attribute_value)
 	EQUAL(reader.get_attributes()["attribute"], "value");
 }
 
+TEST(should_read_attributes_in_self_closed_tag)
+{
+	std::istringstream stream("<Hello attribute=\"value\" />");
+	XMLReader reader(stream);
+	reader.to_next_tag();
+	EQUAL(reader.get_attributes()["attribute"], "value");
+}
+
 TEST(should_read_more_than_one_attribute)
 {
 	std::istringstream stream("<Hello attribute=value second=two>");

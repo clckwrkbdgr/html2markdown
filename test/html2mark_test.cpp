@@ -193,7 +193,7 @@ TEST(should_make_reference_style_link_for_long_img_links)
 			"<img src=\"/a/long/path/to/img\" alt=\"Alt\" title=\"Title\" />",
 			Html2Mark::MAKE_REFERENCE_LINKS, 15
 			),
-		"![Alt][1]\n\n[1]: /a/long/path/to/img \"Title\""
+		"![Alt][1]\n\n[1]: /a/long/path/to/img \"Title\"\n"
 		);
 }
 
@@ -215,7 +215,7 @@ TEST(should_make_reference_style_link_for_long_a_links)
 			html2mark(
 				"<a href=\"http://example.com\" title=\"Title\">Text</a>",
 				Html2Mark::MAKE_REFERENCE_LINKS, 15),
-			"![Text][1]\n\n[1]: http://example.com \"Title\""
+			"![Text][1]\n\n[1]: http://example.com \"Title\"\n"
 		 );
 }
 
