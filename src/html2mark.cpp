@@ -156,8 +156,24 @@ void Html2MarkProcessor::process()
 		} else {
 			if(tag == "p") {
 				collapse_tag();
+				parts.emplace_back(tag, content);
+			} else if(Chthon::starts_with(tag, "hr")) {
+				result += "\n* * *\n";
+				if(parts.empty()) {
+					result += content;
+				} else {
+					parts.back().content += content;
+				}
+			} else if(Chthon::starts_with(tag, "br")) {
+				result += "\n";
+				if(parts.empty()) {
+					result += content;
+				} else {
+					parts.back().content += content;
+				}
+			} else {
+				parts.emplace_back(tag, content);
 			}
-			parts.emplace_back(tag, content);
 		}
 
 		tag = reader.get_current_tag();
