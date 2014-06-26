@@ -251,7 +251,7 @@ TEST(should_convert_ul_tag_to_unnumbered_list)
 TEST(should_skip_li_tag_without_ol_or_ul_tags)
 {
 	EQUAL(html2mark("<li>one</li><ul><li>two<li>three</ul>"),
-			"one\n\n* two\n* three\n");
+			"\none\n\n* two\n* three\n");
 }
 
 TEST(should_remove_extra_whitespaces_in_li_tag)
@@ -263,13 +263,17 @@ TEST(should_remove_extra_whitespaces_in_li_tag)
 TEST(should_indent_all_li_content)
 {
 	EQUAL(html2mark("<ul><li><p>some<p>text</li></ul>"),
-			"\n* some\n  text\n\n");
+			"\n* \n  some\n  \n  text\n");
+	EQUAL(html2mark("<ul><li>some<br>text</li></ul>"),
+			"\n* some\n  text\n");
 }
 
 TEST(should_recognize_nested_list)
 {
 	EQUAL(html2mark("<ul><li><ol><li>some<li>text</ol></ul>"),
-			"\n* * some\n  * text\n\n");
+			"\n* \n  1. some\n  2. text\n");
+	EQUAL(html2mark("<ol><li><ul><li>some<li>text</ol></ul>"),
+			"\n1. \n  * some\n  * text\n");
 }
 
 TEST(should_prepend_blockquote_content_with_quote_character)

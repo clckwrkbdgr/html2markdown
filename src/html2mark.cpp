@@ -105,7 +105,7 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		return value.content.empty() ? "" : "**" + value.content + "**";
 	} else if(value.tag == "code") {
 		return value.content.empty() ? "" : "`" + value.content + "`";
-	} else if(value.tag == "ol") {
+	} else if(value.tag == "ol" || value.tag == "ul") {
 		if(lists.empty()) {
 			return "\n" + collapse(value.content, true, true) + "\n";
 		}
@@ -121,11 +121,16 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 			bool is_first_line = true;
 			for(const std::string & line : lines) {
 				if(is_first_line) {
-					std::string number = std::to_string(index) + ". ";
+					std::string number;
+					if(lists.back().numbered) {
+						number = std::to_string(index) + ". ";
+					} else {
+						number = "* ";
+					}
 					content += number + line + "\n";
 					is_first_line = false;
 				} else {
-					content += "    " + line + "\n";
+					content += "  " + line + "\n";
 				}
 			}
 			++index;
@@ -215,6 +220,12 @@ void Html2MarkProcessor::process()
 		reader.to_next_tag();
 		content = reader.get_current_content();
 
+		/*/
+		TRACE("----");
+		TRACE(tag);
+		TRACE(content);
+		//*/
+
 		if(Chthon::starts_with(tag, "/")) {
 			std::string open_tag = tag.substr(1);
 			bool found = parts.rend() != std::find_if(
@@ -233,28 +244,36 @@ void Html2MarkProcessor::process()
 			} else {
 				parts.emplace_back(tag, content, attrs);
 			}
-		} else if(tag == "ol") {
-			lists.push_back(List(true));
+		} else if(tag == "ol" || tag == "ul") {
+			lists.push_back(List(tag == "ol"));
 			parts.emplace_back(tag, content, attrs);
 		} else if(tag == "li") {
 			bool list_found = false, li_found = false;
 			for(const TaggedContent & part : parts) {
-				if(part.tag == "ol") {
+				if(part.tag == "ol" || part.tag == "ul") {
 					list_found = true;
 					li_found = false;
 				} else if(part.tag == "li") {
 					if(list_found) {
 						li_found = true;
-						break;
 					}
 				}
 			}
 			if(li_found) {
 				collapse_tag("li");
 			}
-			parts.emplace_back(tag, content, attrs);
+			parts.emplace_back(tag, collapse(content, true, true), attrs);
 		} else if(tag == "p") {
-			collapse_tag();
+			bool found = false;
+			for(const TaggedContent & value : parts) {
+				if(value.tag == "p") {
+					found = true;
+					break;
+				}
+			}
+			if(found) {
+				collapse_tag("p");
+			}
 			parts.emplace_back(tag, content, attrs);
 		} else if(Chthon::starts_with(tag, "hr")) {
 			add_content("\n* * *\n");
