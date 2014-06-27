@@ -91,6 +91,7 @@ private:
 	std::string process_tag(const TaggedContent & value);
 	void collapse_tag(const std::string & tag = std::string());
 	void add_content(const std::string & content);
+	void convert_html_entities(std::string & content);
 };
 
 Html2MarkProcessor::Html2MarkProcessor(std::istream & input_stream,
@@ -106,6 +107,8 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		return value.content;
 	} else if(Chthon::contains(pass_tags, value.tag)) {
 		return trim(value.content);
+	} else if(value.tag == "head") {
+		return "";
 	} else if(value.tag == "p") {
 		return "\n" + collapse(value.content, true, true) + "\n";
 	} else if(value.tag == "em") {
@@ -229,6 +232,17 @@ void Html2MarkProcessor::collapse_tag(const std::string & tag)
 	}
 }
 
+void Html2MarkProcessor::convert_html_entities(std::string & content)
+{
+	while(true) {
+		size_t index = content.find("&quot;");
+		if(index == std::string::npos) {
+			break;
+		}
+		content.replace(index, 6, "\"");
+	}
+}
+
 void Html2MarkProcessor::process()
 {
 	XMLReader reader(stream);
@@ -236,10 +250,12 @@ void Html2MarkProcessor::process()
 	std::string tag = reader.to_next_tag();
 	std::string content = collapse(reader.get_current_content());
 	std::map<std::string, std::string> attrs = reader.get_attributes();
+	convert_html_entities(content);
 	result += content;
 	while(!tag.empty()) {
 		reader.to_next_tag();
 		content = reader.get_current_content();
+		convert_html_entities(content);
 
 		/*/
 		TRACE("----");
