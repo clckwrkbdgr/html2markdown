@@ -33,6 +33,16 @@ std::string collapse(const std::string & data,
 	return result;
 }
 
+std::string trim(const std::string & s, const std::string & whitespace)
+{
+    size_t begin = s.find_first_not_of(whitespace);
+    if(begin == std::string::npos) {
+        return ""; // no content
+	}
+    size_t end = s.find_last_not_of(whitespace);
+    return s.substr(begin, end - begin + 1);
+}
+
 struct TaggedContent {
 	std::string tag, content;
 	typedef std::map<std::string, std::string> Attrs;
@@ -65,12 +75,12 @@ struct List {
 };
 
 struct Html2MarkProcessor {
-	Html2MarkProcessor(const std::string & html, int html_options,
+	Html2MarkProcessor(std::istream & input_stream, int html_options,
 			int html_min_reference_links_length);
 	void process();
 	const std::string & get_result() const { return result; }
 private:
-	std::istringstream stream;
+	std::istream & stream;
 	int options;
 	int min_reference_links_length;
 	std::string result;
@@ -83,16 +93,19 @@ private:
 	void add_content(const std::string & content);
 };
 
-Html2MarkProcessor::Html2MarkProcessor(const std::string & html, int html_options,
-		int html_min_reference_links_length)
-	: stream(html), options(html_options),
+Html2MarkProcessor::Html2MarkProcessor(std::istream & input_stream,
+		int html_options, int html_min_reference_links_length)
+	: stream(input_stream), options(html_options),
 	min_reference_links_length(html_min_reference_links_length)
 {}
 
 std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 {
+	static std::vector<std::string> pass_tags = {"html", "body", "span", "div"};
 	if(value.tag.empty()) {
 		return value.content;
+	} else if(Chthon::contains(pass_tags, value.tag)) {
+		return trim(value.content);
 	} else if(value.tag == "p") {
 		return "\n" + collapse(value.content, true, true) + "\n";
 	} else if(value.tag == "em") {
@@ -322,7 +335,16 @@ void Html2MarkProcessor::process()
 std::string html2mark(const std::string & html, int options,
 		int min_reference_links_length)
 {
-	Html2MarkProcessor processor(html, options, min_reference_links_length);
+	std::istringstream input(html);
+	Html2MarkProcessor processor(input, options, min_reference_links_length);
+	processor.process();
+	return processor.get_result();
+}
+
+std::string html2mark(std::istream & input, int options,
+		int min_reference_links_length)
+{
+	Html2MarkProcessor processor(input, options, min_reference_links_length);
 	processor.process();
 	return processor.get_result();
 }

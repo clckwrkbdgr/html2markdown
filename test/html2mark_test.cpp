@@ -27,6 +27,12 @@ TEST(should_remove_trailing_whitespaces)
 			" Text with whitespaces");
 }
 
+TEST(should_trim_extra_whitespaces)
+{
+	EQUAL(Html2Mark::trim("  Text\nwith    whitespaces\t"),
+			"Text\nwith    whitespaces");
+}
+
 }
 
 SUITE(html2mark) {
@@ -280,6 +286,59 @@ TEST(should_prepend_blockquote_content_with_quote_character)
 {
 	EQUAL(html2mark("<blockquote><h1>some</h1><p>text</p></blockquote>"),
 				"\n> \n> # some\n> \n> text\n");
+}
+
+TEST(should_pass_main_html_tags)
+{
+	EQUAL(html2mark("<html>Some text <b>with bold <i>and italic</i></b></html>"),
+				"Some text **with bold _and italic_**");
+}
+
+TEST(should_pass_body_tags)
+{
+	EQUAL(html2mark(
+				"<html>"
+				"  <body>"
+				"    Some text <b>with bold <i>and italic</i></b>"
+				"  </body>"
+				"</html>"
+				),
+			"Some text **with bold _and italic_**");
+}
+
+TEST(should_skip_head_tag)
+{
+	EQUAL(html2mark(
+				"<html>"
+				"  <head>"
+				"    <style>html body { background-color: #111; }</style>"
+				"  </head>"
+				"  <body>"
+				"    Some text <b>with bold <i>and italic</i></b>"
+				"  </body>"
+				"</html>"
+				),
+			"Some text **with bold _and italic_**");
+}
+
+TEST(should_pass_div_tags)
+{
+	EQUAL(html2mark("<div>Some text <b>with bold <i>and italic</i></b></div>"),
+				"Some text **with bold _and italic_**");
+}
+
+TEST(should_pass_span_tags)
+{
+	EQUAL(html2mark(
+				"<div>Some <span>text</span> "
+				"<b>with bold <i>and italic</i></b></div>"
+				),
+			"Some text **with bold _and italic_**");
+}
+
+TEST(should_convert_html_entities)
+{
+	EQUAL(html2mark("&quot;Hello&quot;"), "\"Hello\"");
 }
 
 }

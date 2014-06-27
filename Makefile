@@ -1,8 +1,10 @@
 BIN = html2mark
 TEST_BIN = $(BIN)_test
 SOURCES = $(wildcard src/*.cpp)
+APP_SOURCES = $(wildcard *.cpp)
 TEST_SOURCES = $(wildcard test/*.cpp)
 OBJ = $(addprefix tmp/,$(SOURCES:.cpp=.o))
+APP_OBJ = $(addprefix tmp/,$(APP_SOURCES:.cpp=.o))
 TEST_OBJ = $(addprefix tmp/,$(TEST_SOURCES:.cpp=.o))
 LIBS = -lchthon2
 # -Wpadded -Wuseless-cast -Wvarargs 
@@ -17,8 +19,8 @@ check: test
 test: $(TEST_BIN)
 	./$(TEST_BIN) $(TESTS)
 
-$(BIN): $(OBJ)
-	$(CXX) -shared $(LIBS) -o $@ $^
+$(BIN): $(APP_OBJ) $(OBJ)
+	$(CXX) $(LIBS) -o $@ $^
 
 $(TEST_BIN): $(OBJ) $(TEST_OBJ)
 	$(CXX) $(LIBS) -o $@ $^
@@ -36,5 +38,6 @@ $(shell mkdir -p tmp)
 $(shell mkdir -p tmp/src)
 $(shell mkdir -p tmp/test)
 -include $(OBJ:%.o=%.d)
+-include $(APP_OBJ:%.o=%.d)
 -include $(TEST_OBJ:%.o=%.d)
 
