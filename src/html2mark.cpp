@@ -190,7 +190,7 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		if(lists.empty()) {
 			return "\n" + collapse(value.content, true, true) + "\n";
 		}
-		lists.back().items.push_back(value.content);
+		lists.back().items.push_back(trim(value.content, "\n"));
 		return "";
 	} else if(Chthon::starts_with(value.tag, "h")) {
 		if(value.content.empty()) {

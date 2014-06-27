@@ -263,6 +263,12 @@ TEST(should_convert_ol_tag_to_numbered_list)
 			"\n1. one\n2. two\n3. three\n");
 }
 
+TEST(should_pass_p_tag_inside_li)
+{
+	EQUAL(html2mark("<ol><li><p>one</p></li></ol>"),
+			"\n1. one\n");
+}
+
 TEST(should_convert_ul_tag_to_unnumbered_list)
 {
 	EQUAL(html2mark("<ul><li>one</li><li>two<li>three</ul>"),
@@ -284,7 +290,7 @@ TEST(should_remove_extra_whitespaces_in_li_tag)
 TEST(should_indent_all_li_content)
 {
 	EQUAL(html2mark("<ul><li><p>some<p>text</li></ul>"),
-			"\n* \n  some\n  \n  text\n");
+			"\n* some\n  \n  text\n");
 	EQUAL(html2mark("<ul><li>some<br>text</li></ul>"),
 			"\n* some\n  text\n");
 }
@@ -292,9 +298,9 @@ TEST(should_indent_all_li_content)
 TEST(should_recognize_nested_list)
 {
 	EQUAL(html2mark("<ul><li><ol><li>some<li>text</ol></ul>"),
-			"\n* \n  1. some\n  2. text\n");
+			"\n* 1. some\n  2. text\n");
 	EQUAL(html2mark("<ol><li><ul><li>some<li>text</ol></ul>"),
-			"\n1. \n  * some\n  * text\n");
+			"\n1. * some\n  * text\n");
 }
 
 TEST(should_prepend_blockquote_content_with_quote_character)
@@ -386,8 +392,7 @@ TEST(should_collapse_empty_lines)
 		"\n"
 		"2014-06-26T20:07:53-04:00\n"
 		"\n"
-		"Lorem ipsum dolor sit amet, consectetur adipisicing elit,\n"
-		"sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n"
+		"Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n"
 		"\n"
 		"[1]: http://www.example.com/data/123456\n"
 		;
