@@ -1,4 +1,5 @@
 #include <chthon2/test.h>
+#include <chthon2/log.h>
 #include "../src/html2mark.h"
 using Html2Mark::html2mark;
 
@@ -31,6 +32,20 @@ TEST(should_trim_extra_whitespaces)
 {
 	EQUAL(Html2Mark::trim("  Text\nwith    whitespaces\t"),
 			"Text\nwith    whitespaces");
+	EQUAL(Html2Mark::trim("  Text\nwith    whitespaces"),
+			"Text\nwith    whitespaces");
+	EQUAL(Html2Mark::trim("Text\nwith    whitespaces\t"),
+			"Text\nwith    whitespaces");
+	EQUAL(Html2Mark::trim("Some text **with bold _and italic_**"),
+			"Some text **with bold _and italic_**");
+}
+
+TEST(should_trim_only_specified_whitespaces)
+{
+	EQUAL(Html2Mark::trim("  Text\nwith    whitespaces\t", "\t"),
+			"  Text\nwith    whitespaces");
+	EQUAL(Html2Mark::trim("  Text\nwith    whitespaces\t", " "),
+			"Text\nwith    whitespaces\t");
 }
 
 }
@@ -339,6 +354,49 @@ TEST(should_pass_span_tags)
 TEST(should_convert_html_entities)
 {
 	EQUAL(html2mark("&quot;Hello&quot;"), "\"Hello\"");
+}
+
+TEST(should_collapse_empty_lines)
+{
+	std::string data =
+		"<html>\n"
+		"<head>\n"
+		"<meta http-equiv=Content-Type content=\"text/html; charset=utf-8\"/>\n"
+		"<style type=\"text/css\">\n"
+		"	html body { background-color: #111 }\n"
+		"	body { color: #bbb }\n"
+		"	a { color:#b91 }\n"
+		"</style>\n"
+		"<title>Lorem ipsum</title>\n"
+		"</head>\n"
+		"<body>\n"
+		"<h1>Lorem ipsum</h1>\n"
+		"<p><a href=\"http://www.example.com/data/123456\">http://www.example.com/data/123456</a></p>\n"
+		"<p>2014-06-26T20:07:53-04:00</p>\n"
+		"<div><p>Lorem ipsum dolor sit amet, consectetur adipisicing elit,<br/>\n"
+		"sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p></div>\n"
+		"</body>\n"
+		"</html>\n"
+		;
+	std::string expected =
+		"Lorem ipsum\n"
+		"===========\n"
+		"\n"
+		"[http://www.example.com/data/123456][1]\n"
+		"\n"
+		"2014-06-26T20:07:53-04:00\n"
+		"\n"
+		"Lorem ipsum dolor sit amet, consectetur adipisicing elit,\n"
+		"sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n"
+		"\n"
+		"[1]: http://www.example.com/data/123456\n"
+		;
+	std::string result = html2mark(
+			data,
+			Html2Mark::UNDERSCORED_HEADINGS | Html2Mark::MAKE_REFERENCE_LINKS
+			);
+	EQUAL(result, expected);
+
 }
 
 }

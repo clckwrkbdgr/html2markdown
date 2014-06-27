@@ -35,6 +35,36 @@ std::string collapse(const std::string & data,
 
 std::string trim(const std::string & s, const std::string & whitespace)
 {
+	if(s.empty()) {
+		return s;
+	}
+	if(whitespace.empty()) {
+		size_t index = 0, begin = 0, end = 0;
+		bool begin_found = false;
+		for(char c : s) {
+			if(!begin_found) {
+				begin = index;
+				if(!isspace(c)) {
+					begin_found = true;
+				}
+			}
+			if(isspace(c)) {
+				if(end == 0) {
+					end = index - 1;
+				}
+			} else {
+				end = 0;
+			}
+			++index;
+		}
+		if(!begin_found) {
+			return "";
+		}
+		if(end == 0) {
+			end = s.size() - 1;
+		}
+		return s.substr(begin, end - begin + 1);
+	}
     size_t begin = s.find_first_not_of(whitespace);
     if(begin == std::string::npos) {
         return ""; // no content
@@ -106,6 +136,9 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 	if(value.tag.empty()) {
 		return value.content;
 	} else if(Chthon::contains(pass_tags, value.tag)) {
+		if(value.tag == "div") {
+			return value.content;
+		}
 		return trim(value.content);
 	} else if(value.tag == "head") {
 		return "";
@@ -274,7 +307,11 @@ void Html2MarkProcessor::process()
 			if(found) {
 				collapse_tag(open_tag);
 			}
-			add_content(content);
+			if(Chthon::starts_with(open_tag, "h") || open_tag == "p") {
+				add_content(trim(content));
+			} else {
+				add_content(content);
+			}
 		} else if(tag == "code") {
 			if(!parts.empty() && parts.back().tag == "pre" && parts.back().content.empty()) {
 				parts.back().content = content;
