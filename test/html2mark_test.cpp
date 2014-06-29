@@ -8,48 +8,6 @@ int main(int argc, char ** argv)
 	return Chthon::run_all_tests(argc, argv);
 }
 
-SUITE(utils) {
-
-TEST(should_collapse_extra_whitespaces)
-{
-	EQUAL(Html2Mark::collapse("  Text\nwith    whitespaces\t"),
-			" Text with whitespaces ");
-}
-
-TEST(should_remove_heading_whitespaces)
-{
-	EQUAL(Html2Mark::collapse("  Text\nwith    whitespaces\t", true),
-			"Text with whitespaces ");
-}
-
-TEST(should_remove_trailing_whitespaces)
-{
-	EQUAL(Html2Mark::collapse("  Text\nwith    whitespaces\t", false, true),
-			" Text with whitespaces");
-}
-
-TEST(should_trim_extra_whitespaces)
-{
-	EQUAL(Html2Mark::trim("  Text\nwith    whitespaces\t"),
-			"Text\nwith    whitespaces");
-	EQUAL(Html2Mark::trim("  Text\nwith    whitespaces"),
-			"Text\nwith    whitespaces");
-	EQUAL(Html2Mark::trim("Text\nwith    whitespaces\t"),
-			"Text\nwith    whitespaces");
-	EQUAL(Html2Mark::trim("Some text **with bold _and italic_**"),
-			"Some text **with bold _and italic_**");
-}
-
-TEST(should_trim_only_specified_whitespaces)
-{
-	EQUAL(Html2Mark::trim("  Text\nwith    whitespaces\t", "\t"),
-			"  Text\nwith    whitespaces");
-	EQUAL(Html2Mark::trim("  Text\nwith    whitespaces\t", " "),
-			"Text\nwith    whitespaces\t");
-}
-
-}
-
 SUITE(html2mark) {
 
 TEST(should_pass_text_between_tags)

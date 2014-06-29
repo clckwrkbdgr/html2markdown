@@ -1,5 +1,5 @@
 #include "html2mark.h"
-#include "xmlreader.h"
+#include <chthon2/xmlreader.h>
 #include <chthon2/log.h>
 #include <chthon2/util.h>
 #include <sstream>
@@ -7,71 +7,6 @@
 #include <cctype>
 
 namespace Html2Mark {
-
-std::string collapse(const std::string & data,
-		bool remove_heading, bool remove_trailing)
-{
-	std::string result;
-	bool is_space_group = false;
-	for(char c : data) {
-		if(isspace(c)) {
-			if(!is_space_group) {
-				result += ' ';
-				is_space_group = true;
-			}
-		} else {
-			result += c;
-			is_space_group = false;
-		}
-	}
-	if(remove_heading && !result.empty() && result[0] == ' ') {
-		result.erase(0, 1);
-	}
-	if(remove_trailing && !result.empty() && result[result.size() - 1] == ' ') {
-		result.erase(result.size() - 1, 1);
-	}
-	return result;
-}
-
-std::string trim(const std::string & s, const std::string & whitespace)
-{
-	if(s.empty()) {
-		return s;
-	}
-	if(whitespace.empty()) {
-		size_t index = 0, begin = 0, end = 0;
-		bool begin_found = false;
-		for(char c : s) {
-			if(!begin_found) {
-				begin = index;
-				if(!isspace(c)) {
-					begin_found = true;
-				}
-			}
-			if(isspace(c)) {
-				if(end == 0) {
-					end = index - 1;
-				}
-			} else {
-				end = 0;
-			}
-			++index;
-		}
-		if(!begin_found) {
-			return "";
-		}
-		if(end == 0) {
-			end = s.size() - 1;
-		}
-		return s.substr(begin, end - begin + 1);
-	}
-    size_t begin = s.find_first_not_of(whitespace);
-    if(begin == std::string::npos) {
-        return ""; // no content
-	}
-    size_t end = s.find_last_not_of(whitespace);
-    return s.substr(begin, end - begin + 1);
-}
 
 struct TaggedContent {
 	std::string tag, content;
@@ -130,6 +65,11 @@ Html2MarkProcessor::Html2MarkProcessor(std::istream & input_stream,
 	min_reference_links_length(html_min_reference_links_length)
 {}
 
+static std::string collapse_and_trim(const std::string & s)
+{
+	return Chthon::trim(Chthon::collapse_whitespaces(s));
+}
+
 std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 {
 	static std::vector<std::string> pass_tags = {"html", "body", "span", "div"};
@@ -139,11 +79,11 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		if(value.tag == "div") {
 			return value.content;
 		}
-		return trim(value.content);
+		return Chthon::trim(value.content);
 	} else if(value.tag == "head") {
 		return "";
 	} else if(value.tag == "p") {
-		return "\n" + collapse(value.content, true, true) + "\n";
+		return "\n" + collapse_and_trim(value.content) + "\n";
 	} else if(value.tag == "em") {
 		return value.content.empty() ? "" : "_" + value.content + "_";
 	} else if(value.tag == "i") {
@@ -156,11 +96,11 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		return value.content.empty() ? "" : "`" + value.content + "`";
 	} else if(value.tag == "ol" || value.tag == "ul") {
 		if(lists.empty()) {
-			return "\n" + collapse(value.content, true, true) + "\n";
+			return "\n" + collapse_and_trim(value.content) + "\n";
 		}
 		std::string content;
 		if(!value.content.empty()) {
-			content = "\n" + collapse(value.content, true, true) + "\n";
+			content = "\n" + collapse_and_trim(value.content) + "\n";
 		}
 		content += '\n';
 		int index = 1;
@@ -188,9 +128,9 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		return content;
 	} else if(value.tag == "li") {
 		if(lists.empty()) {
-			return "\n" + collapse(value.content, true, true) + "\n";
+			return "\n" + collapse_and_trim(value.content) + "\n";
 		}
-		lists.back().items.push_back(trim(value.content, "\n"));
+		lists.back().items.push_back(Chthon::trim(value.content, "\n"));
 		return "";
 	} else if(Chthon::starts_with(value.tag, "h")) {
 		if(value.content.empty()) {
@@ -200,7 +140,7 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		if(level < 1 || 6 < level) {
 			return Chthon::format("<{0}>{1}</{0}>", value.tag, value.content);
 		}
-		std::string content = collapse(value.content, true, true);
+		std::string content = collapse_and_trim(value.content);
 		if(level <= 2 && options & UNDERSCORED_HEADINGS) {
 			char underscore = level == 1 ? '=' : '-';
 			return "\n" + content + "\n" +
@@ -216,7 +156,7 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 			src += " \"" + value.attrs.at("title") + '"';
 		}
 		bool is_too_long = value.attrs.at("href").size() > min_reference_links_length;
-		std::string content = collapse(value.content);
+		std::string content = Chthon::collapse_whitespaces(value.content);
 		if(options & MAKE_REFERENCE_LINKS && is_too_long) {
 			unsigned ref_number = references.size() + 1;
 			references.emplace_back(ref_number, src);
@@ -278,10 +218,10 @@ void Html2MarkProcessor::convert_html_entities(std::string & content)
 
 void Html2MarkProcessor::process()
 {
-	XMLReader reader(stream);
+	Chthon::XMLReader reader(stream);
 
 	std::string tag = reader.to_next_tag();
-	std::string content = collapse(reader.get_current_content());
+	std::string content = Chthon::collapse_whitespaces(reader.get_current_content());
 	std::map<std::string, std::string> attrs = reader.get_attributes();
 	convert_html_entities(content);
 	result += content;
@@ -308,7 +248,7 @@ void Html2MarkProcessor::process()
 				collapse_tag(open_tag);
 			}
 			if(Chthon::starts_with(open_tag, "h") || open_tag == "p") {
-				add_content(trim(content));
+				add_content(Chthon::trim(content));
 			} else {
 				add_content(content);
 			}
@@ -336,7 +276,7 @@ void Html2MarkProcessor::process()
 			if(li_found) {
 				collapse_tag("li");
 			}
-			parts.emplace_back(tag, collapse(content, true, true), attrs);
+			parts.emplace_back(tag, collapse_and_trim(content), attrs);
 		} else if(tag == "p") {
 			bool found = false;
 			for(const TaggedContent & value : parts) {
