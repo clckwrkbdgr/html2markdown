@@ -146,6 +146,9 @@ TEST(should_convert_br_tag_to_line_break)
 	EQUAL(html2mark("<br />"), "\n");
 	EQUAL(html2mark("<br/>"), "\n");
 	EQUAL(html2mark("<br>"), "\n");
+	EQUAL(html2mark("<p>one<br>\ntwo<br>\nthree<br>\nfour<br>\nfive</p>\n"),
+			"\none\ntwo\nthree\nfour\nfive\n"
+		 );
 }
 
 TEST(should_convert_img_tag_to_markdown_image_element)
@@ -201,7 +204,7 @@ TEST(should_make_reference_style_link_for_long_a_links)
 TEST(should_remove_extra_whitespaces_in_a_tag)
 {
 	EQUAL(html2mark("<a href=\"http://example.com/\">   \nSome\n\ttext</a>"),
-			"[ Some text](http://example.com/)");
+			"[Some text](http://example.com/)");
 }
 
 TEST(should_take_pre_tag_content_as_it_is_with_tab_indenting)
@@ -213,6 +216,8 @@ TEST(should_take_pre_code_tags_content_as_it_is_with_tab_indenting)
 {
 	EQUAL(html2mark("<pre><code>some\n\ttext</code></pre>"),
 			"\n\tsome\n\t\ttext\n");
+	EQUAL(html2mark("<p><pre><code>some\n\ttext</code></pre></p>"),
+			"\n\n\tsome\n\t\ttext\n");
 }
 
 TEST(should_convert_ol_tag_to_numbered_list)
@@ -318,6 +323,12 @@ TEST(should_pass_span_tags)
 TEST(should_convert_html_entities)
 {
 	EQUAL(html2mark("&quot;Hello&quot;"), "\"Hello\"");
+	EQUAL(html2mark("&nbsp;"), " ");
+	EQUAL(html2mark("Hello&nbsp;&nbsp;world"), "Hello  world");
+	EQUAL(html2mark("&#171;"), "«");
+	EQUAL(html2mark("&#187;"), "»");
+	EQUAL(html2mark("&"), "&");
+	EQUAL(html2mark("Some &text"), "Some &text");
 }
 
 TEST(should_collapse_empty_lines)
@@ -350,7 +361,7 @@ TEST(should_collapse_empty_lines)
 		"\n"
 		"2014-06-26T20:07:53-04:00\n"
 		"\n"
-		"Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n"
+		"Lorem ipsum dolor sit amet, consectetur adipisicing elit,\nsed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n"
 		"\n"
 		"[1]: http://www.example.com/data/123456\n"
 		;

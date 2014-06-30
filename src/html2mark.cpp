@@ -65,11 +65,6 @@ Html2MarkProcessor::Html2MarkProcessor(std::istream & input_stream,
 	min_reference_links_length(html_min_reference_links_length)
 {}
 
-static std::string collapse_and_trim(const std::string & s)
-{
-	return Chthon::trim(Chthon::collapse_whitespaces(s));
-}
-
 std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 {
 	static std::vector<std::string> pass_tags = {"html", "body", "span", "div"};
@@ -83,7 +78,7 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 	} else if(value.tag == "head") {
 		return "";
 	} else if(value.tag == "p") {
-		return "\n" + collapse_and_trim(value.content) + "\n";
+		return "\n" + Chthon::trim_right(value.content) + "\n";
 	} else if(value.tag == "em") {
 		return value.content.empty() ? "" : "_" + value.content + "_";
 	} else if(value.tag == "i") {
@@ -96,11 +91,11 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		return value.content.empty() ? "" : "`" + value.content + "`";
 	} else if(value.tag == "ol" || value.tag == "ul") {
 		if(lists.empty()) {
-			return "\n" + collapse_and_trim(value.content) + "\n";
+			return "\n" + value.content + "\n";
 		}
 		std::string content;
 		if(!value.content.empty()) {
-			content = "\n" + collapse_and_trim(value.content) + "\n";
+			content = "\n" + value.content + "\n";
 		}
 		content += '\n';
 		int index = 1;
@@ -128,9 +123,9 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		return content;
 	} else if(value.tag == "li") {
 		if(lists.empty()) {
-			return "\n" + collapse_and_trim(value.content) + "\n";
+			return "\n" + Chthon::trim_right(value.content) + "\n";
 		}
-		lists.back().items.push_back(Chthon::trim(value.content, "\n"));
+		lists.back().items.push_back(Chthon::trim(value.content));
 		return "";
 	} else if(Chthon::starts_with(value.tag, "h")) {
 		if(value.content.empty()) {
@@ -140,7 +135,7 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		if(level < 1 || 6 < level) {
 			return Chthon::format("<{0}>{1}</{0}>", value.tag, value.content);
 		}
-		std::string content = collapse_and_trim(value.content);
+		std::string content = Chthon::trim_right(value.content);
 		if(level <= 2 && options & UNDERSCORED_HEADINGS) {
 			char underscore = level == 1 ? '=' : '-';
 			return "\n" + content + "\n" +
@@ -156,7 +151,7 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 			src += " \"" + value.attrs.at("title") + '"';
 		}
 		bool is_too_long = value.attrs.at("href").size() > min_reference_links_length;
-		std::string content = Chthon::collapse_whitespaces(value.content);
+		std::string content = value.content;
 		if(options & MAKE_REFERENCE_LINKS && is_too_long) {
 			unsigned ref_number = references.size() + 1;
 			references.emplace_back(ref_number, src);
@@ -207,13 +202,38 @@ void Html2MarkProcessor::collapse_tag(const std::string & tag)
 
 void Html2MarkProcessor::convert_html_entities(std::string & content)
 {
+	static std::vector<std::pair<std::string, std::string>> entities_data = {
+		{"&quot;", "\""},
+		{"&nbsp;", " "},
+		{"&#171;", "«"},
+		{"&#187;", "»"},
+	};
+	static std::map<std::string, std::string> entities(
+			entities_data.begin(), entities_data.end());
+	size_t pos = 0;
 	while(true) {
-		size_t index = content.find("&quot;");
-		if(index == std::string::npos) {
+		pos = content.find("&", pos);
+		if(pos == std::string::npos) {
 			break;
 		}
-		content.replace(index, 6, "\"");
+		size_t end = content.find(";", pos);
+		if(end != std::string::npos) {
+			if(entities.count(content.substr(pos, end - pos + 1))) {
+				content.replace(pos, end - pos + 1, entities[content.substr(pos, end - pos + 1)]);
+			}
+		}
+		++pos;
 	}
+}
+
+static bool has_tag(const std::vector<TaggedContent> & parts, const std::string & tag)
+{
+	return parts.rend() != std::find_if(
+			parts.rbegin(), parts.rend(),
+			[&tag](const TaggedContent & value) {
+			return value.tag == tag;
+			}
+			);
 }
 
 void Html2MarkProcessor::process()
@@ -225,9 +245,21 @@ void Html2MarkProcessor::process()
 	std::map<std::string, std::string> attrs = reader.get_attributes();
 	convert_html_entities(content);
 	result += content;
+	auto is_in_tag = [this,&tag](const std::string & tag_name) {
+		return tag == tag_name || has_tag(this->parts, tag_name);
+	};
 	while(!tag.empty()) {
 		reader.to_next_tag();
 		content = reader.get_current_content();
+		bool keep_whitespaces = is_in_tag("pre") || is_in_tag("code");
+		if(!keep_whitespaces) {
+			content = Chthon::collapse_whitespaces(content);
+			bool keep_border_spaces = is_in_tag("i") || is_in_tag("em")
+				|| is_in_tag("b") || is_in_tag("strong");
+			if(!keep_border_spaces && content != " ") {
+				content = Chthon::trim_left(content);
+			}
+		}
 		convert_html_entities(content);
 
 		/*/
@@ -238,13 +270,7 @@ void Html2MarkProcessor::process()
 
 		if(Chthon::starts_with(tag, "/")) {
 			std::string open_tag = tag.substr(1);
-			bool found = parts.rend() != std::find_if(
-					parts.rend(), parts.rbegin(),
-					[&open_tag](const TaggedContent & value) {
-						return value.tag == open_tag;
-					}
-					);
-			if(found) {
+			if(has_tag(parts, open_tag)) {
 				collapse_tag(open_tag);
 			}
 			if(Chthon::starts_with(open_tag, "h") || open_tag == "p") {
@@ -276,7 +302,7 @@ void Html2MarkProcessor::process()
 			if(li_found) {
 				collapse_tag("li");
 			}
-			parts.emplace_back(tag, collapse_and_trim(content), attrs);
+			parts.emplace_back(tag, content, attrs);
 		} else if(tag == "p") {
 			bool found = false;
 			for(const TaggedContent & value : parts) {
