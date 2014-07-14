@@ -72,7 +72,7 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		return value.content;
 	} else if(Chthon::contains(pass_tags, value.tag)) {
 		if(value.tag == "div") {
-			return value.content;
+			return "\n" + Chthon::trim(value.content) + "\n";
 		}
 		return Chthon::trim(value.content);
 	} else if(value.tag == "head") {

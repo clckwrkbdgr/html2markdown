@@ -305,10 +305,10 @@ TEST(should_skip_head_tag)
 			"Some text **with bold _and italic_**");
 }
 
-TEST(should_pass_div_tags)
+TEST(should_treat_div_tags_as_paragraphs)
 {
 	EQUAL(html2mark("<div>Some text <b>with bold <i>and italic</i></b></div>"),
-				"Some text **with bold _and italic_**");
+				"\nSome text **with bold _and italic_**\n");
 }
 
 TEST(should_pass_span_tags)
@@ -317,7 +317,7 @@ TEST(should_pass_span_tags)
 				"<div>Some <span>text</span> "
 				"<b>with bold <i>and italic</i></b></div>"
 				),
-			"Some text **with bold _and italic_**");
+			"\nSome text **with bold _and italic_**\n");
 }
 
 TEST(should_convert_html_entities)
