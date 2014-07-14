@@ -377,3 +377,84 @@ TEST(should_collapse_empty_lines)
 }
 
 }
+
+SUITE(colors) {
+
+TEST(should_place_reset_markers_in_the_beginning_and_the_end)
+{
+	EQUAL(html2mark("Text", Html2Mark::COLORS), "[0mText[0m");
+}
+
+TEST(should_mark_emphasized_text_with_cyan)
+{
+	EQUAL(html2mark("<em>Text</em>", Html2Mark::COLORS), "[0m[00;36mText[0m");
+	EQUAL(html2mark("<i>Text</i>", Html2Mark::COLORS), "[0m[00;36mText[0m");
+}
+
+TEST(should_mark_strong_text_with_bold_style)
+{
+	EQUAL(html2mark("<strong>Text</strong>", Html2Mark::COLORS), "[0m[01;37mText[0m");
+	EQUAL(html2mark("<b>Text</b>", Html2Mark::COLORS), "[0m[01;37mText[0m");
+}
+
+TEST(should_mark_emphasized_strong_text_with_bold_cyan)
+{
+	EQUAL(html2mark("<b>Hello, <i>world</i></b>", Html2Mark::COLORS),
+			"[0m[01;37mHello, [01;36mworld[0m");
+	EQUAL(html2mark("<b><i>Hello</i>, world</b>", Html2Mark::COLORS),
+			"[0m[01;36mHello[01;37m, world[0m");
+}
+
+TEST(should_mark_headers_with_purple)
+{
+	EQUAL(html2mark("<h1>Text</h1>", Html2Mark::COLORS),
+			"[0m[00;35m# Text[0m");
+	EQUAL(html2mark("<h1>Text</h1>",
+				Html2Mark::COLORS | Html2Mark::UNDERSCORED_HEADINGS),
+			"[0m[00;35mText\n====[0m");
+}
+
+TEST(should_mark_rulers_with_purple)
+{
+	EQUAL(html2mark("<hr>", Html2Mark::COLORS),
+			"[0m[00;35m* * *[0m");
+}
+
+TEST(should_mark_urls_with_blue)
+{
+	EQUAL(html2mark("<img src=\"/path/to/img\" />", Html2Mark::COLORS),
+			"[0m![]([00;34m/path/to/img[0m)[0m");
+	EQUAL(html2mark("<a href=\"http://example.com/\">Text</a>", Html2Mark::COLORS),
+			"[0m[Text]([00;34mhttp://example.com/[0m)[0m");
+	EQUAL(
+		html2mark(
+			"<img src=\"/a/long/path/to/img\"/>",
+			Html2Mark::COLORS | Html2Mark::MAKE_REFERENCE_LINKS, 15
+			),
+		"[0m![][1]\n\n[1]: [00;34m/a/long/path/to/img[0m"
+		);
+}
+
+TEST(should_mark_list_bullets_with_yellow)
+{
+	EQUAL(html2mark("<ol><li>one</li><li>two<li>three</ol>", Html2Mark::COLORS),
+			"[0m\n[00;33m1.[0m one\n"
+			"[00;33m2.[0m two\n"
+			"[00;33m3.[0m three\n[0m");
+	EQUAL(html2mark("<ul><li>one</li><li>two<li>three</ul>", Html2Mark::COLORS),
+			"[0m\n[00;33m*[0m one\n"
+			"[00;33m*[0m two\n"
+			"[00;33m*[0m three\n[0m");
+}
+
+TEST(should_mark_blockquote_line_with_yellow)
+{
+	EQUAL(html2mark("<blockquote><h1>some</h1><p>text</p></blockquote>", Html2Mark::COLORS),
+				"[0m\n"
+				"[00;33m>[0m \n"
+				"[00;33m>[0m [00;35m# some[0m\n"
+				"[00;33m>[0m \n"
+				"[00;33m>[0m text\n[0m");
+}
+
+}
