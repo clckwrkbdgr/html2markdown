@@ -203,10 +203,15 @@ void Html2MarkProcessor::collapse_tag(const std::string & tag)
 void Html2MarkProcessor::convert_html_entities(std::string & content)
 {
 	static std::vector<std::pair<std::string, std::string>> entities_data = {
-		{"&quot;", "\""},
-		{"&nbsp;", " "},
-		{"&#171;", "«"},
-		{"&#187;", "»"},
+		{"quot", "\""},
+		{"nbsp", " "},
+		{"#171", "«"},
+		{"#187", "»"},
+		{"lt", "<"},
+		{"gt", ">"},
+		{"amp", "&"},
+		{"rarr", "→"},
+		{"mdash", "—"},
 	};
 	static std::map<std::string, std::string> entities(
 			entities_data.begin(), entities_data.end());
@@ -218,8 +223,14 @@ void Html2MarkProcessor::convert_html_entities(std::string & content)
 		}
 		size_t end = content.find(";", pos);
 		if(end != std::string::npos) {
-			if(entities.count(content.substr(pos, end - pos + 1))) {
-				content.replace(pos, end - pos + 1, entities[content.substr(pos, end - pos + 1)]);
+			std::string entity = content.substr(pos + 1, end - pos - 1);
+			if(entities.count(entity)) {
+				content.replace(pos, end - pos + 1, entities[entity]);
+			} else if(Chthon::starts_with(entity, "#")) {
+				int entity_code = atoi(entity.substr(1).c_str());
+				if(entity_code < 256) {
+					content.replace(pos, end - pos + 1, std::string(1, (char)entity_code));
+				}
 			}
 		}
 		++pos;

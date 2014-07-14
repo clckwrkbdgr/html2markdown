@@ -329,6 +329,9 @@ TEST(should_convert_html_entities)
 	EQUAL(html2mark("&#187;"), "»");
 	EQUAL(html2mark("&"), "&");
 	EQUAL(html2mark("Some &text"), "Some &text");
+	EQUAL(html2mark("&#39;"), "'");
+	EQUAL(html2mark("&lt;&gt;"), "<>");
+	EQUAL(html2mark("&amp; &rarr; &mdash; &#40; &#41; &#58; "), "& → — ( ) : ");
 }
 
 TEST(should_collapse_empty_lines)
