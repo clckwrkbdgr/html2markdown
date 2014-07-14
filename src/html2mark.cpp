@@ -338,6 +338,7 @@ void Html2MarkProcessor::process()
 				src += " \"" + attrs["title"] + '"';
 			}
 			bool is_too_long = attrs["src"].size() > min_reference_links_length;
+			convert_html_entities(attrs["alt"]);
 			if(options & MAKE_REFERENCE_LINKS && is_too_long) {
 				unsigned ref_number = references.size() + 1;
 				references.emplace_back(ref_number, src);
