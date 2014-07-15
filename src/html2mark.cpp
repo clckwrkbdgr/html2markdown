@@ -8,6 +8,18 @@
 
 namespace Html2Mark {
 
+namespace {
+	const char ESCAPE = '';
+	const std::string RESET = "[0m";
+	const std::string CYAN = "[00;36m";
+	const std::string WHITE = "[01;37m";
+	const std::string BOLD_CYAN = "[01;36m";
+	const std::string PURPLE = "[00;35m";
+	const std::string BOLD_PURPLE = "[01;35m";
+	const std::string BLUE = "[00;34m";
+	const std::string YELLOW = "[00;33m";
+}
+
 struct TaggedContent {
 	std::string tag, content;
 	typedef std::map<std::string, std::string> Attrs;
@@ -19,18 +31,22 @@ struct TaggedContent {
 			)
 		: tag(given_tag), content(given_content), attrs(given_attrs)
 	{}
-	std::string process_tag() const;
 };
 
-std::string TaggedContent::process_tag() const
+static bool has_tag(const std::vector<TaggedContent> & parts, const std::string & tag)
 {
-	if(tag == "p") {
-		return "\n" + content + "\n";
-	}
-	if(tag == "") {
-		return content;
-	}
-	return Chthon::format("<{0}>{1}</{0}>", tag, content);
+	return parts.rend() != std::find_if(
+			parts.rbegin(), parts.rend(),
+			[&tag](const TaggedContent & value) {
+			return value.tag == tag;
+			}
+			);
+}
+
+static bool has_header_tag(const std::vector<TaggedContent> & parts)
+{
+	return has_tag(parts, "h1") || has_tag(parts, "h2") || has_tag(parts, "h3") || 
+		has_tag(parts, "h4") || has_tag(parts, "h5") || has_tag(parts, "h4");
 }
 
 struct List {
@@ -46,13 +62,14 @@ struct Html2MarkProcessor {
 	const std::string & get_result() const { return result; }
 private:
 	std::istream & stream;
-	int options;
-	int min_reference_links_length;
+	const int options;
+	const int min_reference_links_length;
 	std::string result;
 	std::vector<TaggedContent> parts;
 	std::vector<std::pair<unsigned, std::string>> references;
 	std::vector<List> lists;
 
+	bool colors() const;
 	std::string process_tag(const TaggedContent & value);
 	void collapse_tag(const std::string & tag = std::string());
 	void add_content(const std::string & content);
@@ -64,6 +81,11 @@ Html2MarkProcessor::Html2MarkProcessor(std::istream & input_stream,
 	: stream(input_stream), options(html_options),
 	min_reference_links_length(html_min_reference_links_length)
 {}
+
+bool Html2MarkProcessor::colors() const
+{
+	return options & COLORS;
+}
 
 std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 {
@@ -79,14 +101,26 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		return "";
 	} else if(value.tag == "p") {
 		return "\n" + Chthon::trim_right(value.content) + "\n";
-	} else if(value.tag == "em") {
-		return value.content.empty() ? "" : "_" + value.content + "_";
-	} else if(value.tag == "i") {
-		return value.content.empty() ? "" : "_" + value.content + "_";
-	} else if(value.tag == "b") {
-		return value.content.empty() ? "" : "**" + value.content + "**";
-	} else if(value.tag == "strong") {
-		return value.content.empty() ? "" : "**" + value.content + "**";
+	} else if(value.tag == "em" || value.tag == "i") {
+		if(colors()) {
+			bool strong_em = has_tag(parts, "b") || has_tag(parts, "strong");
+			std::string color = strong_em ? BOLD_CYAN : CYAN;
+			return value.content.empty() ? "" : color + value.content + RESET;
+		} else {
+			return value.content.empty() ? "" : "_" + value.content + "_";
+		}
+	} else if(value.tag == "b" || value.tag == "strong") {
+		if(colors()) {
+			std::string color = WHITE;
+			if(has_header_tag(parts)) {
+				color = BOLD_PURPLE;
+			} else if(has_tag(parts, "i") || has_tag(parts, "em")) {
+				color = BOLD_CYAN;
+			}
+			return value.content.empty() ? "" : color + value.content + RESET;
+		} else {
+			return value.content.empty() ? "" : "**" + value.content + "**";
+		}
 	} else if(value.tag == "code") {
 		return value.content.empty() ? "" : "`" + value.content + "`";
 	} else if(value.tag == "ol" || value.tag == "ul") {
@@ -107,9 +141,17 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 				if(is_first_line) {
 					std::string number;
 					if(lists.back().numbered) {
-						number = std::to_string(index) + ". ";
+						if(colors()) {
+							number = YELLOW + std::to_string(index) + "." + RESET + " ";
+						} else {
+							number = std::to_string(index) + ". ";
+						}
 					} else {
-						number = "* ";
+						if(colors()) {
+							number = YELLOW + "*" + RESET + " ";
+						} else {
+							number = "* ";
+						}
 					}
 					content += number + line + "\n";
 					is_first_line = false;
@@ -138,15 +180,27 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		std::string content = Chthon::trim_right(value.content);
 		if(level <= 2 && options & UNDERSCORED_HEADINGS) {
 			char underscore = level == 1 ? '=' : '-';
-			return "\n" + content + "\n" +
-				std::string(content.size(), underscore) + "\n";
+			if(colors()) {
+				return "\n" + PURPLE + content + "\n" +
+					std::string(content.size(), underscore) + RESET + "\n";
+			} else {
+				return "\n" + content + "\n" +
+					std::string(content.size(), underscore) + "\n";
+			}
 		}
-		return "\n" + std::string(level, '#') +  " " + content + "\n";
+		if(colors()) {
+			return "\n" + PURPLE + std::string(level, '#') +  " " + content + RESET + "\n";
+		} else {
+			return "\n" + std::string(level, '#') +  " " + content + "\n";
+		}
 	} else if(value.tag == "a") {
 		if(value.attrs.count("href") == 0) {
 			return value.content;
 		}
 		std::string src = value.attrs.at("href");
+		if(colors()) {
+			src = BLUE + src + RESET;
+		}
 		if(value.attrs.count("title")) {
 			src += " \"" + value.attrs.at("title") + '"';
 		}
@@ -172,7 +226,11 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		Chthon::split(value.content, lines);
 		std::string content;
 		for(const std::string & line : lines) {
-			content += "\n> " + line;
+			if(colors()) {
+				content += "\n" + YELLOW + ">" + RESET + " " + line;
+			} else {
+				content += "\n> " + line;
+			}
 		}
 		return content + "\n";
 	}
@@ -237,16 +295,6 @@ void Html2MarkProcessor::convert_html_entities(std::string & content)
 	}
 }
 
-static bool has_tag(const std::vector<TaggedContent> & parts, const std::string & tag)
-{
-	return parts.rend() != std::find_if(
-			parts.rbegin(), parts.rend(),
-			[&tag](const TaggedContent & value) {
-			return value.tag == tag;
-			}
-			);
-}
-
 void Html2MarkProcessor::process()
 {
 	Chthon::XMLReader reader(stream);
@@ -255,6 +303,9 @@ void Html2MarkProcessor::process()
 	std::string content = Chthon::collapse_whitespaces(reader.get_current_content());
 	std::map<std::string, std::string> attrs = reader.get_attributes();
 	convert_html_entities(content);
+	if(colors()) {
+		result += RESET;
+	}
 	result += content;
 	auto is_in_tag = [this,&tag](const std::string & tag_name) {
 		return tag == tag_name || has_tag(this->parts, tag_name);
@@ -327,13 +378,20 @@ void Html2MarkProcessor::process()
 			}
 			parts.emplace_back(tag, content, attrs);
 		} else if(Chthon::starts_with(tag, "hr")) {
-			add_content("\n* * *\n");
+			if(colors()) {
+				add_content("\n" + PURPLE + "* * *" + RESET + "\n");
+			} else {
+				add_content("\n* * *\n");
+			}
 			add_content(content);
 		} else if(Chthon::starts_with(tag, "br")) {
 			add_content("\n");
 			add_content(content);
 		} else if(tag == "img") {
 			std::string src = attrs["src"];
+			if(colors()) {
+				src = BLUE + src + RESET;
+			}
 			if(attrs.count("title")) {
 				src += " \"" + attrs["title"] + '"';
 			}
@@ -359,6 +417,36 @@ void Html2MarkProcessor::process()
 		result += "\n\n";
 		for(auto ref : references) {
 			result += Chthon::format("[{0}]: {1}\n", ref.first, ref.second);
+		}
+	}
+	if(colors()) {
+		size_t pos = 0;
+		std::vector<std::string> color_stack;
+		while((pos = result.find(ESCAPE, pos + 1)) != std::string::npos) {
+			if(result.substr(pos, 4) != RESET) {
+				color_stack.push_back(result.substr(pos, 8));
+				continue;
+			}
+			if(color_stack.empty()) {
+				result.erase(pos, 4);
+				--pos;
+				continue;
+			}
+			color_stack.pop_back();
+			if(!color_stack.empty()) {
+				result.replace(pos, 4, color_stack.back());
+			}
+		}
+		pos = 0;
+		while((pos = result.find(ESCAPE, pos + 1)) != std::string::npos) {
+			size_t len = (result.substr(pos, 4) == RESET) ? 4 : 8;
+			if(pos + len < result.size() && result[pos + len] == ESCAPE) {
+				result.erase(pos, len);
+				--pos;
+			}
+		}
+		if(!Chthon::ends_with(result, RESET)) {
+			result += RESET;
 		}
 	}
 }

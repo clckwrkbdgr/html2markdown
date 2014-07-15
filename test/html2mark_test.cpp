@@ -403,21 +403,29 @@ TEST(should_mark_emphasized_strong_text_with_bold_cyan)
 			"[0m[01;37mHello, [01;36mworld[0m");
 	EQUAL(html2mark("<b><i>Hello</i>, world</b>", Html2Mark::COLORS),
 			"[0m[01;36mHello[01;37m, world[0m");
+	EQUAL(html2mark("<i>Hello, <b>world</b></i>", Html2Mark::COLORS),
+			"[0m[00;36mHello, [01;36mworld[0m");
+	EQUAL(html2mark("<i><b>Hello</b>, world</i>", Html2Mark::COLORS),
+			"[0m[01;36mHello[00;36m, world[0m");
 }
 
 TEST(should_mark_headers_with_purple)
 {
 	EQUAL(html2mark("<h1>Text</h1>", Html2Mark::COLORS),
-			"[0m[00;35m# Text[0m");
+			"[0m\n[00;35m# Text[0m\n[0m");
 	EQUAL(html2mark("<h1>Text</h1>",
 				Html2Mark::COLORS | Html2Mark::UNDERSCORED_HEADINGS),
-			"[0m[00;35mText\n====[0m");
+			"[0m\n[00;35mText\n====[0m\n[0m");
+	EQUAL(html2mark("<h1>Hello, <b>world</b></h1>", Html2Mark::COLORS),
+			"[0m\n[00;35m# Hello, [01;35mworld[0m\n[0m");
+	EQUAL(html2mark("<h1><i>Hello, <b>world</b></i></h1>", Html2Mark::COLORS),
+			"[0m\n[00;35m# [00;36mHello, [01;35mworld[0m\n[0m");
 }
 
 TEST(should_mark_rulers_with_purple)
 {
 	EQUAL(html2mark("<hr>", Html2Mark::COLORS),
-			"[0m[00;35m* * *[0m");
+			"[0m\n[00;35m* * *[0m\n[0m");
 }
 
 TEST(should_mark_urls_with_blue)
@@ -431,7 +439,7 @@ TEST(should_mark_urls_with_blue)
 			"<img src=\"/a/long/path/to/img\"/>",
 			Html2Mark::COLORS | Html2Mark::MAKE_REFERENCE_LINKS, 15
 			),
-		"[0m![][1]\n\n[1]: [00;34m/a/long/path/to/img[0m"
+		"[0m![][1]\n\n[1]: [00;34m/a/long/path/to/img[0m\n[0m"
 		);
 }
 
