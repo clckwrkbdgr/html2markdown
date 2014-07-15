@@ -14,8 +14,8 @@ enum {
 };
 
 std::string html2mark(const std::string & html, int options = DEFAULT_OPTIONS,
-		int min_reference_links_length = 20, int wrap_width = 80);
+		size_t min_reference_links_length = 20, size_t wrap_width = 80);
 std::string html2mark(std::istream & input, int options = DEFAULT_OPTIONS,
-		int min_reference_links_length = 20, int wrap_width = 80);
+		size_t min_reference_links_length = 20, size_t wrap_width = 80);
 
 }

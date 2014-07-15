@@ -57,14 +57,14 @@ struct List {
 
 struct Html2MarkProcessor {
 	Html2MarkProcessor(std::istream & input_stream, int html_options,
-			int html_min_reference_links_length, int html_wrap_width);
+			size_t html_min_reference_links_length, size_t html_wrap_width);
 	void process();
 	const std::string & get_result() const { return result; }
 private:
 	std::istream & stream;
 	const int options;
-	const int min_reference_links_length;
-	const int wrap_width;
+	const size_t min_reference_links_length;
+	const size_t wrap_width;
 	std::string result;
 	std::vector<TaggedContent> parts;
 	std::vector<std::pair<unsigned, std::string>> references;
@@ -78,7 +78,7 @@ private:
 };
 
 Html2MarkProcessor::Html2MarkProcessor(std::istream & input_stream,
-		int html_options, int html_min_reference_links_length, int html_wrap_width)
+		int html_options, size_t html_min_reference_links_length, size_t html_wrap_width)
 	: stream(input_stream), options(html_options),
 	min_reference_links_length(html_min_reference_links_length),
 	wrap_width(html_wrap_width)
@@ -451,10 +451,49 @@ void Html2MarkProcessor::process()
 			result += RESET;
 		}
 	}
+	if(options & WRAP) {
+		size_t pos = 0;
+		std::string last_escape_seq;
+		while(pos < result.size()) {
+			size_t last_pos = pos;
+			size_t last_space = std::string::npos;
+			int virtual_width = 0;
+			while(pos < result.size() && int(pos - last_pos) + virtual_width <= int(wrap_width)) {
+				if(result[pos] == ' ') {
+					last_space = pos;
+				} else if(result[pos] == '\n') {
+					last_pos = pos;
+					last_space = std::string::npos;
+				} else if(result[pos] == '\t') {
+					virtual_width += 7;
+				} else if(result[pos] == ESCAPE) {
+					int len = (result.substr(pos, 4) == RESET) ? 4 : 8;
+					last_escape_seq = result.substr(pos, size_t(len));
+					virtual_width -= len;
+					pos += unsigned(len) - 1;
+				}
+				++pos;
+			}
+			if(pos >= result.size()) {
+				break;
+			}
+			if(last_space != std::string::npos) {
+				if(!last_escape_seq.empty() && last_escape_seq != RESET) {
+					result.replace(last_space, 1, RESET + '\n' + last_escape_seq);
+					pos = last_space + 1 + RESET.size() + last_escape_seq.size();
+				} else {
+					result[last_space] = '\n';
+					pos = last_space + 1;
+				}
+			} else {
+				result.insert(pos - 1, "\n");
+			}
+		}
+	}
 }
 
 std::string html2mark(const std::string & html, int options,
-		int min_reference_links_length, int wrap_width)
+		size_t min_reference_links_length, size_t wrap_width)
 {
 	std::istringstream input(html);
 	Html2MarkProcessor processor(input, options, min_reference_links_length, wrap_width);
@@ -463,7 +502,7 @@ std::string html2mark(const std::string & html, int options,
 }
 
 std::string html2mark(std::istream & input, int options,
-		int min_reference_links_length, int wrap_width)
+		size_t min_reference_links_length, size_t wrap_width)
 {
 	Html2MarkProcessor processor(input, options, min_reference_links_length, wrap_width);
 	processor.process();

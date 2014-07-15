@@ -489,15 +489,47 @@ TEST(should_wrap_words)
 	EQUAL(html2mark(data, Html2Mark::WRAP, 20, 50), expected);
 }
 
+TEST(should_consider_newlines_when_wrap_words)
+{
+	std::string data = 
+		"Lorem ipsum dolor sit amet,\n"
+		"consectetur adipisicing elit,\n"
+		"sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+		;
+	std::string expected = 
+		"Lorem ipsum dolor sit amet,\n"
+		"consectetur adipisicing elit,\n"
+		"sed do eiusmod tempor\n"
+		"incididunt ut labore et dolore\n"
+		"magna aliqua."
+		;
+	EQUAL(html2mark(data, Html2Mark::WRAP, 20, 30), expected);
+}
+
+TEST(should_assume_tab_width_as_8_when_wrap_words)
+{
+	std::string data = 
+		"<pre>Lorem ipsum dolor sit amet, consectetur adipisicing elit.</pre>"
+		;
+	std::string expected = 
+		"\n"
+		"\tLorem ipsum dolor sit\n"
+		"amet, consectetur adipisicing\n"
+		"elit.\n"
+		;
+	EQUAL(html2mark(data, Html2Mark::WRAP, 20, 30), expected);
+}
+
 TEST(should_split_too_long_words_in_wrap_mode)
 {
 	std::string data = 
 		"Loremipsumdolorsitamet, consecteturadipisicing elit"
 		;
 	std::string expected = 
-		"Loremipsumdolorsitamet,\n"
-		"consecteturadipisicing\n"
-		"elit"
+		"Loremipsumdolorsitam\n"
+		"et,\n"
+		"consecteturadipisici\n"
+		"ng elit"
 		;
 	EQUAL(html2mark(data, Html2Mark::WRAP, 20, 20), expected);
 }
@@ -511,13 +543,13 @@ TEST(should_not_count_color_codes_as_visible_characters)
 		"[0m[00;36mLorem ipsum dolor[0m sit amet,\n"
 		"consectetur adipisicing elit[0m"
 		;
-	EQUAL(html2mark(data, Html2Mark::WRAP, 20, 30), expected);
+	EQUAL(html2mark(data, Html2Mark::WRAP | Html2Mark::COLORS, 20, 30), expected);
 }
 
 TEST(should_duplicate_colors_on_wrapped_lines)
 {
 	std::string data = 
-		"<p>&nbsp;&nbsp;&nbsp;<i>Lorem ipsum dolor</i> sit <b>amet<i>, consectetur adipisicing elit</i>, sed do eiusmod tempor</b> incididunt ut labore et dolore magna aliqua.</p> <h1>Ut enim ad <i>minim veniam, quis <b>nostrud exercitation ullamco</b> laboris nisi ut aliquip ex</i> ea commodo consequat.</h1>."
+		"<p>&nbsp;&nbsp;&nbsp;<i>Lorem ipsum dolor</i> sit <b>amet<i>, consectetur adipisicing elit</i>, sed do eiusmod tempor</b> incididunt ut labore et dolore magna aliqua.</p> <h1>Ut enim ad <i>minim veniam, quis <b>nostrud exercitation ullamco</b> laboris nisi ut aliquip ex</i> ea commodo consequat.</h1>"
 		;
 	std::string expected = 
 		"[0m\n"
@@ -534,7 +566,7 @@ TEST(should_duplicate_colors_on_wrapped_lines)
 		"[00;35mconsequat.[0m\n"
 		"[0m"
 		;
-	EQUAL(html2mark(data, Html2Mark::WRAP, 20, 30), expected);
+	EQUAL(html2mark(data, Html2Mark::WRAP | Html2Mark::COLORS, 20, 30), expected);
 }
 
 }
