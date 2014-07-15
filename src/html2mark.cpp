@@ -57,13 +57,14 @@ struct List {
 
 struct Html2MarkProcessor {
 	Html2MarkProcessor(std::istream & input_stream, int html_options,
-			int html_min_reference_links_length);
+			int html_min_reference_links_length, int html_wrap_width);
 	void process();
 	const std::string & get_result() const { return result; }
 private:
 	std::istream & stream;
 	const int options;
 	const int min_reference_links_length;
+	const int wrap_width;
 	std::string result;
 	std::vector<TaggedContent> parts;
 	std::vector<std::pair<unsigned, std::string>> references;
@@ -77,9 +78,10 @@ private:
 };
 
 Html2MarkProcessor::Html2MarkProcessor(std::istream & input_stream,
-		int html_options, int html_min_reference_links_length)
+		int html_options, int html_min_reference_links_length, int html_wrap_width)
 	: stream(input_stream), options(html_options),
-	min_reference_links_length(html_min_reference_links_length)
+	min_reference_links_length(html_min_reference_links_length),
+	wrap_width(html_wrap_width)
 {}
 
 bool Html2MarkProcessor::colors() const
@@ -452,18 +454,18 @@ void Html2MarkProcessor::process()
 }
 
 std::string html2mark(const std::string & html, int options,
-		int min_reference_links_length)
+		int min_reference_links_length, int wrap_width)
 {
 	std::istringstream input(html);
-	Html2MarkProcessor processor(input, options, min_reference_links_length);
+	Html2MarkProcessor processor(input, options, min_reference_links_length, wrap_width);
 	processor.process();
 	return processor.get_result();
 }
 
 std::string html2mark(std::istream & input, int options,
-		int min_reference_links_length)
+		int min_reference_links_length, int wrap_width)
 {
-	Html2MarkProcessor processor(input, options, min_reference_links_length);
+	Html2MarkProcessor processor(input, options, min_reference_links_length, wrap_width);
 	processor.process();
 	return processor.get_result();
 }

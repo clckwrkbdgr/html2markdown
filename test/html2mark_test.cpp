@@ -466,3 +466,76 @@ TEST(should_mark_blockquote_line_with_yellow)
 }
 
 }
+
+SUITE(wrap) {
+
+TEST(should_wrap_words)
+{
+	std::string data = 
+		"Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+		;
+	std::string expected = 
+		"Lorem ipsum dolor sit amet, consectetur\n"
+		"adipisicing elit, sed do eiusmod tempor incididunt\n"
+		"ut labore et dolore magna aliqua. Ut enim ad minim\n"
+		"veniam, quis nostrud exercitation ullamco laboris\n"
+		"nisi ut aliquip ex ea commodo consequat. Duis aute\n"
+		"irure dolor in reprehenderit in voluptate velit\n"
+		"esse cillum dolore eu fugiat nulla pariatur.\n"
+		"Excepteur sint occaecat cupidatat non proident,\n"
+		"sunt in culpa qui officia deserunt mollit anim id\n"
+		"est laborum."
+		;
+	EQUAL(html2mark(data, Html2Mark::WRAP, 20, 50), expected);
+}
+
+TEST(should_split_too_long_words_in_wrap_mode)
+{
+	std::string data = 
+		"Loremipsumdolorsitamet, consecteturadipisicing elit"
+		;
+	std::string expected = 
+		"Loremipsumdolorsitamet,\n"
+		"consecteturadipisicing\n"
+		"elit"
+		;
+	EQUAL(html2mark(data, Html2Mark::WRAP, 20, 20), expected);
+}
+
+TEST(should_not_count_color_codes_as_visible_characters)
+{
+	std::string data = 
+		"<i>Lorem ipsum dolor</i> sit amet, consectetur adipisicing elit"
+		;
+	std::string expected = 
+		"[0m[00;36mLorem ipsum dolor[0m sit amet,\n"
+		"consectetur adipisicing elit[0m"
+		;
+	EQUAL(html2mark(data, Html2Mark::WRAP, 20, 30), expected);
+}
+
+TEST(should_duplicate_colors_on_wrapped_lines)
+{
+	std::string data = 
+		"<p>&nbsp;&nbsp;&nbsp;<i>Lorem ipsum dolor</i> sit <b>amet<i>, consectetur adipisicing elit</i>, sed do eiusmod tempor</b> incididunt ut labore et dolore magna aliqua.</p> <h1>Ut enim ad <i>minim veniam, quis <b>nostrud exercitation ullamco</b> laboris nisi ut aliquip ex</i> ea commodo consequat.</h1>."
+		;
+	std::string expected = 
+		"[0m\n"
+		"   [00;36mLorem ipsum dolor[0m sit [01;37mamet[01;36m,[0m\n"
+		"[01;36mconsectetur adipisicing elit[01;37m,[0m\n"
+		"[01;37msed do eiusmod tempor[0m\n"
+		"incididunt ut labore et dolore\n"
+		"magna aliqua.\n"
+		"\n"
+		"[00;35m# Ut enim ad [00;36mminim veniam,[0m\n"
+		"[00;36mquis [01;35mnostrud exercitation[0m\n"
+		"[01;35mullamco[00;36m laboris nisi ut[0m\n"
+		"[00;36maliquip ex[00;35m ea commodo[0m\n"
+		"[00;35mconsequat.[0m\n"
+		"[0m"
+		;
+	EQUAL(html2mark(data, Html2Mark::WRAP, 20, 30), expected);
+}
+
+}
+
