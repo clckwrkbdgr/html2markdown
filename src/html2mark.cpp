@@ -20,6 +20,15 @@ namespace {
 	const std::string YELLOW = "[00;33m";
 }
 
+static size_t utf8_size(const std::string & s)
+{
+	size_t result = 0;
+	for(char c : s) {
+		result += (c & 0xc0) != 0x80;
+	}
+	return result;
+}
+
 struct TaggedContent {
 	std::string tag, content;
 	typedef std::map<std::string, std::string> Attrs;
@@ -184,10 +193,10 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 			char underscore = level == 1 ? '=' : '-';
 			if(colors()) {
 				return "\n" + PURPLE + content + "\n" +
-					std::string(content.size(), underscore) + RESET + "\n";
+					std::string(utf8_size(content), underscore) + RESET + "\n";
 			} else {
 				return "\n" + content + "\n" +
-					std::string(content.size(), underscore) + "\n";
+					std::string(utf8_size(content), underscore) + "\n";
 			}
 		}
 		if(colors()) {
@@ -461,18 +470,26 @@ void Html2MarkProcessor::process()
 			while(pos < result.size() && int(pos - last_pos) + virtual_width <= int(wrap_width)) {
 				if(result[pos] == ' ') {
 					last_space = pos;
+					++pos;
 				} else if(result[pos] == '\n') {
 					last_pos = pos;
 					last_space = std::string::npos;
+					++pos;
 				} else if(result[pos] == '\t') {
 					virtual_width += 7;
+					++pos;
 				} else if(result[pos] == ESCAPE) {
 					int len = (result.substr(pos, 4) == RESET) ? 4 : 8;
 					last_escape_seq = result.substr(pos, size_t(len));
 					virtual_width -= len;
-					pos += unsigned(len) - 1;
+					pos += unsigned(len);
+				} else {
+					++pos;
+					bool is_utf8 = (result[pos] & 0xc0) == 0x80;
+					if(is_utf8) {
+						--virtual_width;
+					}
 				}
-				++pos;
 			}
 			if(pos >= result.size()) {
 				break;
