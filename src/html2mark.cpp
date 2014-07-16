@@ -9,15 +9,20 @@
 namespace Html2Mark {
 
 namespace {
-	const char ESCAPE = '';
-	const std::string RESET = "[0m";
-	const std::string CYAN = "[00;36m";
-	const std::string WHITE = "[01;37m";
-	const std::string BOLD_CYAN = "[01;36m";
-	const std::string PURPLE = "[00;35m";
-	const std::string BOLD_PURPLE = "[01;35m";
-	const std::string BLUE = "[00;34m";
-	const std::string YELLOW = "[00;33m";
+	/*/
+#define ESCAPE_STR "^"
+/*/
+#define ESCAPE_STR ""
+//*/
+	const char ESCAPE = ESCAPE_STR[0];
+	const std::string RESET = ESCAPE_STR"[0m";
+	const std::string CYAN = ESCAPE_STR"[00;36m";
+	const std::string WHITE = ESCAPE_STR"[01;37m";
+	const std::string BOLD_CYAN = ESCAPE_STR"[01;36m";
+	const std::string PURPLE = ESCAPE_STR"[00;35m";
+	const std::string BOLD_PURPLE = ESCAPE_STR"[01;35m";
+	const std::string BLUE = ESCAPE_STR"[00;34m";
+	const std::string YELLOW = ESCAPE_STR"[00;33m";
 }
 
 static size_t utf8_size(const std::string & s)
@@ -466,7 +471,7 @@ void Html2MarkProcessor::process()
 					last_space = pos;
 					++pos;
 				} else if(result[pos] == '\n') {
-					last_pos = pos;
+					last_pos = pos + 1;
 					last_space = std::string::npos;
 					virtual_width = 0;
 					++pos;
