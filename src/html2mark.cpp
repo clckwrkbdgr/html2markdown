@@ -335,12 +335,6 @@ void Html2MarkProcessor::process()
 		}
 		convert_html_entities(content);
 
-		/*/
-		TRACE("----");
-		TRACE(tag);
-		TRACE(content);
-		//*/
-
 		if(Chthon::starts_with(tag, "/")) {
 			std::string open_tag = tag.substr(1);
 			if(has_tag(parts, open_tag)) {
@@ -474,6 +468,7 @@ void Html2MarkProcessor::process()
 				} else if(result[pos] == '\n') {
 					last_pos = pos;
 					last_space = std::string::npos;
+					virtual_width = 0;
 					++pos;
 				} else if(result[pos] == '\t') {
 					virtual_width += 7;
@@ -487,6 +482,7 @@ void Html2MarkProcessor::process()
 					++pos;
 					bool is_utf8 = (result[pos] & 0xc0) == 0x80;
 					if(is_utf8) {
+						++pos;
 						--virtual_width;
 					}
 				}
