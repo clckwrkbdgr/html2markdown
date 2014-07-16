@@ -471,6 +471,10 @@ void Html2MarkProcessor::process()
 					last_space = pos;
 					++pos;
 				} else if(result[pos] == '\n') {
+					if(!last_escape_seq.empty() && last_escape_seq != RESET) {
+						result.replace(pos, 1, RESET + '\n' + last_escape_seq);
+						pos = pos + RESET.size() + last_escape_seq.size();
+					}
 					last_pos = pos + 1;
 					last_space = std::string::npos;
 					virtual_width = 0;

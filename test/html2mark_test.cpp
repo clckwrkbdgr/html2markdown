@@ -569,6 +569,24 @@ TEST(should_duplicate_colors_on_wrapped_lines)
 	EQUAL(html2mark(data, Html2Mark::WRAP | Html2Mark::COLORS, 20, 30), expected);
 }
 
+TEST(should_duplicate_colors_on_multilined_color_formatting)
+{
+	std::string data =
+		"<h1>Lorem ipsum</h1><p><i>Lorem ipsum dolor sit amet,<br>consectetur adipisicing elit</i>, sed do eiusmod tempor."
+		;
+	std::string expected =
+		"[0m\n"
+		"[00;35mLorem ipsum[0m\n"
+		"[00;35m===========[0m\n"
+		"\n"
+		"[00;36mLorem ipsum dolor sit amet,[0m\n"
+		"[00;36mconsectetur adipisicing elit[0m,\n"
+		"sed do eiusmod tempor.\n"
+		"[0m"
+		;
+	EQUAL(html2mark(data, Html2Mark::WRAP | Html2Mark::UNDERSCORED_HEADINGS | Html2Mark::COLORS, 20, 30), expected);
+}
+
 }
 
 SUITE(utf8) {
