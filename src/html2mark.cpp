@@ -302,7 +302,7 @@ void Html2MarkProcessor::convert_html_entities(std::string & content)
 				content.replace(pos, end - pos + 1, entities[entity]);
 			} else if(Chthon::starts_with(entity, "#")) {
 				int entity_code = atoi(entity.substr(1).c_str());
-				if(entity_code < 256) {
+				if(entity_code < 128) {
 					content.replace(pos, end - pos + 1, std::string(1, (char)entity_code));
 				}
 			}
