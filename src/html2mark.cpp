@@ -23,6 +23,7 @@ namespace {
 	const std::string BOLD_PURPLE = ESCAPE_STR"[01;35m";
 	const std::string BLUE = ESCAPE_STR"[00;34m";
 	const std::string YELLOW = ESCAPE_STR"[00;33m";
+	const std::string GREEN = ESCAPE_STR"[00;32m";
 }
 
 static size_t utf8_size(const std::string & s)
@@ -214,9 +215,6 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 			return value.content;
 		}
 		std::string src = value.attrs.at("href");
-		if(colors()) {
-			src = BLUE + src + RESET;
-		}
 		if(value.attrs.count("title")) {
 			src += " \"" + value.attrs.at("title") + '"';
 		}
@@ -225,9 +223,19 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		if(options & MAKE_REFERENCE_LINKS && is_too_long) {
 			unsigned ref_number = references.size() + 1;
 			references.emplace_back(ref_number, src);
-			return Chthon::format("[{0}][{1}]", content, ref_number);
+			if(colors()) {
+				std::string templ = BLUE + "{0}" + RESET + GREEN + "[{1}]" + RESET;
+				return Chthon::format(templ, content, ref_number);
+			} else {
+				return Chthon::format("[{0}][{1}]", content, ref_number);
+			}
 		} else {
-			return Chthon::format("[{0}]({1})", content, src);
+			if(colors()) {
+				std::string templ = BLUE + "{0}" + RESET + GREEN + "({1})" + RESET;
+				return Chthon::format(templ, content, src);
+			} else {
+				return Chthon::format("[{0}]({1})", content, src);
+			}
 		}
 	} else if(value.tag == "pre") {
 		std::vector<std::string> lines;
@@ -399,9 +407,6 @@ void Html2MarkProcessor::process()
 			add_content(content);
 		} else if(tag == "img") {
 			std::string src = attrs["src"];
-			if(colors()) {
-				src = BLUE + src + RESET;
-			}
 			if(attrs.count("title")) {
 				src += " \"" + attrs["title"] + '"';
 			}
@@ -410,9 +415,19 @@ void Html2MarkProcessor::process()
 			if(options & MAKE_REFERENCE_LINKS && is_too_long) {
 				unsigned ref_number = references.size() + 1;
 				references.emplace_back(ref_number, src);
-				add_content(Chthon::format("![{0}][{1}]", attrs["alt"], ref_number));
+				if(colors()) {
+					std::string templ = BLUE + "![{0}]" + RESET + GREEN + "[{1}]" + RESET;
+					add_content(Chthon::format(templ, attrs["alt"], ref_number));
+				} else {
+					add_content(Chthon::format("![{0}][{1}]", attrs["alt"], ref_number));
+				}
 			} else {
-				add_content(Chthon::format("![{0}]({1})", attrs["alt"], src));
+				if(colors()) {
+					std::string templ = BLUE + "![{0}]" + RESET + GREEN + "({1})" + RESET;
+					add_content(Chthon::format(templ, attrs["alt"], src));
+				} else {
+					add_content(Chthon::format("![{0}]({1})", attrs["alt"], src));
+				}
 			}
 			add_content(content);
 		} else {
@@ -426,7 +441,12 @@ void Html2MarkProcessor::process()
 	if(!references.empty()) {
 		result += "\n\n";
 		for(auto ref : references) {
-			result += Chthon::format("[{0}]: {1}\n", ref.first, ref.second);
+			if(colors()) {
+				std::string templ = GREEN + "[{0}]" + RESET + ": {1}\n";
+				result += Chthon::format(templ, ref.first, ref.second);
+			} else {
+				result += Chthon::format("[{0}]: {1}\n", ref.first, ref.second);
+			}
 		}
 	}
 	if(colors()) {

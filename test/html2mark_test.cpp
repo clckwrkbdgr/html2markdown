@@ -428,18 +428,25 @@ TEST(should_mark_rulers_with_purple)
 			"[0m\n[00;35m* * *[0m\n[0m");
 }
 
-TEST(should_mark_urls_with_blue)
+TEST(should_mark_a_and_img_text_with_blue_and_source_link_with_green)
 {
-	EQUAL(html2mark("<img src=\"/path/to/img\" />", Html2Mark::COLORS),
-			"[0m![]([00;34m/path/to/img[0m)[0m");
 	EQUAL(html2mark("<a href=\"http://example.com/\">Text</a>", Html2Mark::COLORS),
-			"[0m[Text]([00;34mhttp://example.com/[0m)[0m");
+			"[0m[00;34mText[00;32m(http://example.com/)[0m");
+	EQUAL(
+		html2mark(
+			"<a href=\"http://example.com/\"/>Text</a>",
+			Html2Mark::COLORS | Html2Mark::MAKE_REFERENCE_LINKS, 10
+			),
+		"[0m[00;34mText[00;32m[1][0m\n\n[00;32m[1][0m: http://example.com/\n[0m"
+		);
+	EQUAL(html2mark("<img src=\"/path/to/img\"/>", Html2Mark::COLORS),
+			"[0m[00;34m![][00;32m(/path/to/img)[0m");
 	EQUAL(
 		html2mark(
 			"<img src=\"/a/long/path/to/img\"/>",
 			Html2Mark::COLORS | Html2Mark::MAKE_REFERENCE_LINKS, 15
 			),
-		"[0m![][1]\n\n[1]: [00;34m/a/long/path/to/img[0m\n[0m"
+		"[0m[00;34m![][00;32m[1][0m\n\n[00;32m[1][0m: /a/long/path/to/img\n[0m"
 		);
 }
 
