@@ -528,7 +528,12 @@ void Html2MarkProcessor::process()
 					pos = last_space + 1;
 				}
 			} else {
-				result.insert(pos - 1, "\n");
+				if(!last_escape_seq.empty() && last_escape_seq != RESET) {
+					result.insert(pos - 1, RESET + '\n' + last_escape_seq);
+					pos = pos + RESET.size() + last_escape_seq.size();
+				} else {
+					result.insert(pos - 1, "\n");
+				}
 			}
 		}
 	}
