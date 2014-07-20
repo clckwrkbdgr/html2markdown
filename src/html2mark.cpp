@@ -482,12 +482,14 @@ void Html2MarkProcessor::process()
 	if(options & WRAP) {
 		size_t pos = 0;
 		std::string last_escape_seq;
+		std::string last_escape_seq_before_space;
 		while(pos < result.size()) {
 			size_t last_pos = pos;
 			size_t last_space = std::string::npos;
 			int virtual_width = 0;
 			while(pos < result.size() && int(pos - last_pos) + virtual_width <= int(wrap_width)) {
 				if(result[pos] == ' ') {
+					last_escape_seq_before_space = last_escape_seq;
 					last_space = pos;
 					++pos;
 				} else if(result[pos] == '\n') {
@@ -520,6 +522,7 @@ void Html2MarkProcessor::process()
 				break;
 			}
 			if(last_space != std::string::npos) {
+				last_escape_seq = last_escape_seq_before_space;
 				if(!last_escape_seq.empty() && last_escape_seq != RESET) {
 					result.replace(last_space, 1, RESET + '\n' + last_escape_seq);
 					pos = last_space + 1 + RESET.size() + last_escape_seq.size();
