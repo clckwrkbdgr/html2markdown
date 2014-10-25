@@ -289,11 +289,19 @@ void Html2MarkProcessor::convert_html_entities(std::string & content)
 		{"nbsp", " "},
 		{"#171", "«"},
 		{"#187", "»"},
+		{"laquo", "«"},
+		{"raquo", "»"},
 		{"lt", "<"},
 		{"gt", ">"},
 		{"amp", "&"},
 		{"rarr", "→"},
 		{"mdash", "—"},
+		{"ndash", "–"},
+		{"#8217", "’"},
+		{"hellip", "…"},
+		{"rsquo", "’"},
+		{"rdquo", "”"},
+		{"ldquo", "“"},
 	};
 	static std::map<std::string, std::string> entities(
 			entities_data.begin(), entities_data.end());
