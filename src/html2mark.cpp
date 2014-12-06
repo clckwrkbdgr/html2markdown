@@ -89,7 +89,6 @@ private:
 	std::string process_tag(const TaggedContent & value);
 	void collapse_tag(const std::string & tag = std::string());
 	void add_content(const std::string & content);
-	void convert_html_entities(std::string & content);
 };
 
 Html2MarkProcessor::Html2MarkProcessor(std::istream & input_stream,
@@ -138,6 +137,8 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		} else {
 			return value.content.empty() ? "" : "**" + value.content + "**";
 		}
+	} else if(value.tag == "cite") {
+		return value.content.empty() ? "" : "`" + value.content + "`";
 	} else if(value.tag == "code") {
 		return value.content.empty() ? "" : "`" + value.content + "`";
 	} else if(value.tag == "ol" || value.tag == "ul") {
@@ -282,51 +283,6 @@ void Html2MarkProcessor::collapse_tag(const std::string & tag)
 	}
 }
 
-void Html2MarkProcessor::convert_html_entities(std::string & content)
-{
-	static std::vector<std::pair<std::string, std::string>> entities_data = {
-		{"quot", "\""},
-		{"nbsp", " "},
-		{"#171", "«"},
-		{"#187", "»"},
-		{"laquo", "«"},
-		{"raquo", "»"},
-		{"lt", "<"},
-		{"gt", ">"},
-		{"amp", "&"},
-		{"rarr", "→"},
-		{"mdash", "—"},
-		{"ndash", "–"},
-		{"#8217", "’"},
-		{"hellip", "…"},
-		{"rsquo", "’"},
-		{"rdquo", "”"},
-		{"ldquo", "“"},
-	};
-	static std::map<std::string, std::string> entities(
-			entities_data.begin(), entities_data.end());
-	size_t pos = 0;
-	while(true) {
-		pos = content.find("&", pos);
-		if(pos == std::string::npos) {
-			break;
-		}
-		size_t end = content.find(";", pos);
-		if(end != std::string::npos) {
-			std::string entity = content.substr(pos + 1, end - pos - 1);
-			if(entities.count(entity)) {
-				content.replace(pos, end - pos + 1, entities[entity]);
-			} else if(Chthon::starts_with(entity, "#")) {
-				int entity_code = atoi(entity.substr(1).c_str());
-				if(entity_code < 128) {
-					content.replace(pos, end - pos + 1, std::string(1, (char)entity_code));
-				}
-			}
-		}
-		++pos;
-	}
-}
-
 void Html2MarkProcessor::process()
 {
 	Chthon::XMLReader reader(stream);
@@ -334,7 +290,6 @@ void Html2MarkProcessor::process()
 	std::string tag = reader.to_next_tag();
 	std::string content = Chthon::collapse_whitespaces(reader.get_current_content());
 	std::map<std::string, std::string> attrs = reader.get_attributes();
-	convert_html_entities(content);
 	if(colors()) {
 		result += RESET;
 	}
@@ -354,7 +309,6 @@ void Html2MarkProcessor::process()
 				content = Chthon::trim_left(content);
 			}
 		}
-		convert_html_entities(content);
 
 		if(Chthon::starts_with(tag, "/")) {
 			std::string open_tag = tag.substr(1);
@@ -419,7 +373,6 @@ void Html2MarkProcessor::process()
 				src += " \"" + attrs["title"] + '"';
 			}
 			bool is_too_long = attrs["src"].size() > min_reference_links_length;
-			convert_html_entities(attrs["alt"]);
 			if(options & MAKE_REFERENCE_LINKS && is_too_long) {
 				unsigned ref_number = references.size() + 1;
 				references.emplace_back(ref_number, src);

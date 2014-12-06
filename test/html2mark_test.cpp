@@ -364,22 +364,6 @@ TEST(should_collapse_empty_lines)
 
 }
 
-TEST(should_convert_html_entities)
-{
-	EQUAL(html2mark("&quot;Hello&quot;"), "\"Hello\"");
-	EQUAL(html2mark("&nbsp;"), " ");
-	EQUAL(html2mark("Hello&nbsp;&nbsp;world"), "Hello  world");
-	EQUAL(html2mark("&#171;"), "«");
-	EQUAL(html2mark("&#187;"), "»");
-	EQUAL(html2mark("&"), "&");
-	EQUAL(html2mark("Some &text"), "Some &text");
-	EQUAL(html2mark("&#39;"), "'");
-	EQUAL(html2mark("&lt;&gt;"), "<>");
-	EQUAL(html2mark("&amp; &rarr; &mdash; &#40; &#41; &#58; "), "& → — ( ) : ");
-	EQUAL(html2mark("&laquo;&raquo;&ndash;&#8217;&hellip;"), "«»–’…");
-	EQUAL(html2mark("&rsquo;&rdquo;&ldquo;"), "’”“");
-}
-
 SUITE(colors) {
 
 TEST(should_place_reset_markers_in_the_beginning_and_the_end)
