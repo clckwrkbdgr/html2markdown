@@ -222,7 +222,7 @@ std::string Html2MarkProcessor::process_tag(const TaggedContent & value)
 		bool is_too_long = value.attrs.at("href").size() > min_reference_links_length;
 		std::string content = value.content;
 		if(options & MAKE_REFERENCE_LINKS && is_too_long) {
-			unsigned ref_number = references.size() + 1;
+			unsigned ref_number = (unsigned)references.size() + 1;
 			references.emplace_back(ref_number, src);
 			if(colors()) {
 				std::string templ = BLUE + "{0}" + RESET + GREEN + "[{1}]" + RESET;
@@ -374,7 +374,7 @@ void Html2MarkProcessor::process()
 			}
 			bool is_too_long = attrs["src"].size() > min_reference_links_length;
 			if(options & MAKE_REFERENCE_LINKS && is_too_long) {
-				unsigned ref_number = references.size() + 1;
+				unsigned ref_number = (unsigned)references.size() + 1;
 				references.emplace_back(ref_number, src);
 				if(colors()) {
 					std::string templ = BLUE + "![{0}]" + RESET + GREEN + "[{1}]" + RESET;
