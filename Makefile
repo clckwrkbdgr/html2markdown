@@ -1,3 +1,5 @@
+VERSION=$(shell git tag | sed 's/.*\([0-9]\+\.[0-9]\+\.[0-9]\+\)/\1/' | sort -nt . | tail -1)
+
 BIN = html2mark
 TEST_BIN = $(BIN)_test
 SOURCES = $(wildcard src/*.cpp)
@@ -18,6 +20,16 @@ check: test
 
 test: $(TEST_BIN)
 	./$(TEST_BIN) $(TESTS)
+
+deb: $(BIN)
+	@debpackage.py \
+		html2markdown \
+		-v $(VERSION) \
+		--maintainer 'umi041 <umi0451@gmail.com>' \
+		--bin $(BIN) \
+		--build-dir tmp \
+		--dest-dir . \
+		--description 'Utility to convert HTML to Markdown.'
 
 $(BIN): $(APP_OBJ) $(OBJ)
 	$(CXX) $(LIBS) -o $@ $^
