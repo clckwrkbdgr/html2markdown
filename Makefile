@@ -23,7 +23,7 @@ test: $(TEST_BIN)
 
 deb: $(BIN)
 	@debpackage.py \
-		html2markdown \
+		html2mark \
 		-v $(VERSION) \
 		--maintainer 'umi041 <umi0451@gmail.com>' \
 		--bin $(BIN) \
@@ -32,10 +32,10 @@ deb: $(BIN)
 		--description 'Utility to convert HTML to Markdown.'
 
 $(BIN): $(APP_OBJ) $(OBJ)
-	$(CXX) $(LIBS) -o $@ $^
+	$(CXX) -o $@ $^ $(LIBS)
 
 $(TEST_BIN): $(OBJ) $(TEST_OBJ)
-	$(CXX) $(LIBS) -o $@ $^
+	$(CXX) -o $@ $^ $(LIBS)
 
 tmp/%.o: %.cpp
 	@echo Compiling $<...
